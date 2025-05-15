@@ -1,0 +1,39 @@
+{
+    "name": "arkhas/inertia-datatable",
+    "description": "A Laravel package for dynamic datatables using Inertia.js and React.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1",
+        "laravel/framework": "^12.0",
+        "inertiajs/inertia-laravel": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Arkhas\\InertiaDatatable\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Arkhas\\InertiaDatatable\\InertiaDatatableServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require-dev": {
+        "pestphp/pest": "^2.36",
+        "orchestra/testbench": "^8.36"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

@@ -1,0 +1,50 @@
+# Laravel Package .gitignore
+
+# Dependencies
+/vendor/
+/node_modules/
+npm-debug.log
+yarn-error.log
+yarn.lock
+composer.lock
+package-lock.json
+
+# IDE & Editors
+/.idea/
+/.junie/
+/.vscode/
+/.fleet/
+/.phpstorm.meta.php
+/_ide_helper.php
+/_ide_helper_models.php
+
+# Environment files
+.env
+.env.backup
+.env.testing
+
+# Testing artifacts
+.phpunit.result.cache
+.phpunit.cache
+/coverage/
+/coverage-html/
+/.phpunit.cache/
+
+# Build artifacts
+/dist/
+/build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Laravel specific
+/.php-cs-fixer.cache
+/.php_cs.cache
+/.php_cs
+
+# Local development files
+/public/hot
+/public/storage
+/storage/*.key
+/bootstrap/cache/

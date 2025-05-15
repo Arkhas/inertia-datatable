@@ -1,0 +1,867 @@
+<?php
+namespace Tests\Unit;
+
+use Arkhas\InertiaDatatable\Columns\ActionColumn;
+use Arkhas\InertiaDatatable\Columns\ColumnAction;
+use Arkhas\InertiaDatatable\Columns\ColumnActionGroup;
+use Arkhas\InertiaDatatable\Filters\Filter;
+use Illuminate\Console\View\Components\Task;
+use Tests\TestCase;
+use Tests\TestModels\WithTestModels;
+use Tests\TestModels\TestModel;
+use Arkhas\InertiaDatatable\InertiaDatatable;
+use Arkhas\InertiaDatatable\EloquentTable;
+use Arkhas\InertiaDatatable\Columns\Column;
+use Arkhas\InertiaDatatable\Columns\CheckboxColumn;
+use Arkhas\InertiaDatatable\Actions\TableAction;
+use Arkhas\InertiaDatatable\Actions\TableActionGroup;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
+
+class InertiaDatatableTest extends TestCase
+{
+    use WithTestModels;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->setUpTestModels();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->tearDownTestModels();
+        parent::tearDown();
+    }
+
+    public function test_can_render_datatable_with_columns()
+    {
+        
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name'),
+            Column::make('status'),
+        ]);
+
+        $datatable->table($table);
+
+        $this->assertCount(2, $datatable->getTable()->getColumns());
+    }
+
+    public function test_render_without_filters_or_sorting()
+    {
+        $datatable = new InertiaDatatable();
+        $query = TestModel::query();
+        $table = EloquentTable::make($query)->columns([
+            Column::make('name'),
+            Column::make('status'),
+        ]);
+
+        $datatable->table($table);
+
+        // Render without any filters or sorting
+        $datatable->render('Datatable');
+
+        $this->assertEquals(['Alice', 'Bob', 'Charlie'], $query->pluck('name')->toArray());
+    }
+
+    public function test_render_with_invalid_sort_column()
+    {
+        $datatable = new InertiaDatatable();
+
+        $query = TestModel::query();
+        $table = EloquentTable::make($query)->columns([
+            Column::make('name'),
+            Column::make('status'),
+        ]);
+
+        $datatable->table($table);
+
+        // Apply invalid sort column
+        request()->replace(['sort' => 'invalid_column', 'direction' => 'asc']);
+        $datatable->render('Datatable');
+
+        $this->assertEquals(['Alice', 'Bob', 'Charlie'], $query->pluck('name')->toArray());
+    }
+
+    public function test_render_with_no_matching_filters()
+    {
+        $datatable = new InertiaDatatable();
+
+        $query = TestModel::query();
+        $table = EloquentTable::make($query)->columns([
+            Column::make('name'),
+            Column::make('status'),
+        ]);
+
+        $datatable->table($table);
+
+        // Apply a filter that does not match any column
+        request()->merge(['nonexistent' => 'value']);
+        $datatable->render('Datatable');
+
+        $this->assertEquals(['Alice', 'Bob', 'Charlie'], $query->pluck('name')->toArray());
+    }
+
+    public function test_get_current_filter_values_with_comma_separated_string()
+    {
+        $datatable = new InertiaDatatable();
+        $filters   = [
+            'status' => 'active,inactive',
+            'name'   => 'Alice',
+        ];
+        $result    = $datatable->getCurrentFilterValues($filters);
+        $this->assertEquals(['active', 'inactive'], $result['status']);
+        $this->assertEquals('Alice', $result['name']);
+    }
+
+    public function test_get_props_returns_expected_keys()
+    {
+        
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name'),
+        ]);
+        $datatable->table($table);
+        $props = $datatable->getProps();
+        $this->assertArrayHasKey('columns', $props);
+        $this->assertArrayHasKey('filters', $props);
+        $this->assertArrayHasKey('data', $props);
+        $this->assertArrayHasKey('pageSize', $props);
+        $this->assertArrayHasKey('availablePageSizes', $props);
+        $this->assertArrayHasKey('sort', $props);
+        $this->assertArrayHasKey('direction', $props);
+        $this->assertArrayHasKey('currentFilters', $props);
+    }
+
+    public function test_get_columns_returns_expected_format()
+    {
+        
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name')->label('Nom'),
+        ]);
+        $datatable->table($table);
+        $columns = $datatable->getColumns();
+        $this->assertEquals([
+            [
+                'name'         => 'name',
+                'label'        => 'Nom',
+                'hasIcon'      => false,
+                'sortable'     => true,
+                'toggable'     => true,
+                'iconPosition' => 'left',
+                'searchable'   => true,
+            ]
+        ], $columns);
+    }
+
+    public function test_get_filters_returns_expected_format()
+    {
+        
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->filters([]);
+        $datatable->table($table);
+        $filters = $datatable->getFilters();
+        $this->assertIsArray($filters);
+    }
+
+    public function test_get_results_with_search_and_sort()
+    {
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name'),
+            Column::make('status'),
+        ]);
+        $datatable->table($table);
+        request()->replace(['search' => 'Alice', 'sort' => 'name', 'direction' => 'desc', 'pageSize' => 2]);
+        $results = $datatable->getResults()->get();
+        $this->assertTrue($results->contains('name', 'Alice'));
+    }
+
+    public function test_get_data_returns_paginated_collection()
+    {
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name'),
+        ]);
+        $datatable->table($table);
+        request()->replace(['pageSize' => 2]);
+        $data = $datatable->getData();
+        $this->assertEquals(2, $data->perPage());
+        $this->assertTrue($data->total() >= 3);
+    }
+
+    public function test_render_throws_error_without_table()
+    {
+        $datatable = new InertiaDatatable();
+        $this->expectException(\Error::class);
+        $datatable->render('Datatable');
+    }
+
+    public function test_get_results_throws_error_without_table()
+    {
+        $datatable = new InertiaDatatable();
+        $this->expectException(\Error::class);
+        $datatable->getResults();
+    }
+
+    public function test_get_results_applies_filter_and_direct_column_filter()
+    {
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name'),
+            Column::make('status'),
+        ]);
+        $datatable->table($table);
+        // Simule un filtre sur status et un filtre direct sur name
+        request()->replace(['filters' => ['status' => 'active'], 'name' => 'Alice']);
+        $results = $datatable->getResults()->get();
+        $this->assertTrue($results->contains('name', 'Alice'));
+        $this->assertTrue($results->contains('status', 'active'));
+    }
+
+    public function test_get_results_applies_filter_with_callback_and_direct_column_filter()
+    {
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name'),
+            Column::make('status'),
+        ])->filters([
+            Filter::make('status')
+                  ->options(['active', 'inactive'])
+                  ->query(fn($query, $value) => $query->where('status', $value))
+        ]);
+        $datatable->table($table);
+        // Simule un filtre sur status et un filtre direct sur name
+        request()->replace(['filters' => ['status' => 'active'], 'name' => 'Alice']);
+        $results = $datatable->getResults()->get();
+        $this->assertTrue($results->contains('name', 'Alice'));
+        $this->assertTrue($results->contains('status', 'active'));
+    }
+
+    public function test_get_results_with_invalid_page_size_sets_minimum()
+    {
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name'),
+        ]);
+        $datatable->table($table);
+        request()->replace(['pageSize' => 0]);
+        $results = $datatable->getResults()->get();
+        $this->assertNotEmpty($results);
+    }
+
+    public function test_get_data_adds_html_and_icon_keys()
+    {
+        $datatable = new InertiaDatatable();
+        $column    = Column::make('name')
+                           ->html(fn($model) => '<b>' . $model->name . '</b>')
+                           ->icon(fn($model) => $model->name === 'Alice' ? 'icon' : null);
+        $table     = EloquentTable::make(TestModel::query())->columns([$column]);
+        $datatable->table($table);
+        request()->replace(['pageSize' => 2]);
+        $data  = $datatable->getData();
+        $first = $data->items()[0];
+        $this->assertArrayHasKey('name_html', $first);
+        $this->assertArrayHasKey('name_icon', $first);
+    }
+
+    public function test_get_columns_label_fallback()
+    {
+        
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            Column::make('foo_bar'),
+        ]);
+        $datatable->table($table);
+        $columns = $datatable->getColumns();
+        $this->assertEquals('Foo bar', $columns[0]['label']);
+    }
+
+    public function test_get_filters_with_multiple_and_icons()
+    {
+        
+        $datatable = new InertiaDatatable();
+        $filter    = Filter::make('status', 'Status')
+                           ->options(['active', 'inactive'])
+                           ->icons(['icon1', 'icon2'])
+                           ->multiple();
+        $table     = EloquentTable::make(TestModel::query())->filters([$filter]);
+        $datatable->table($table);
+        $filters = $datatable->getFilters();
+        $this->assertEquals('status', $filters[0]['name']);
+        $this->assertEquals(['icon1', 'icon2'], $filters[0]['icons']);
+        $this->assertTrue($filters[0]['multiple']);
+    }
+
+    public function test_get_request_returns_app_instance_if_not_set()
+    {
+        $datatable = new InertiaDatatable();
+        // On n'appelle pas setRequest, donc getRequest doit retourner app(Request::class)
+        $request = $datatable->getProps()['pageSize'](); // getProps utilise getRequest
+        $this->assertNotNull($request);
+    }
+
+    public function test_get_results_applies_additional_search_fields()
+    {
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name'),
+        ]);
+        $datatable->table($table)->additionalSearchFields(['status']);
+        request()->replace(['search' => 'active']);
+        $results = $datatable->getResults()->get();
+        $this->assertTrue($results->contains('status', 'active'));
+    }
+
+    public function test_get_results_applies_no_filter_if_name_not_found()
+    {
+        $datatable = new InertiaDatatable();
+        // Utilise la méthode make pour instancier Filter correctement
+        $filter = Filter::make('not_status', 'Not Status');
+        $table  = EloquentTable::make(TestModel::query())->filters([$filter]);
+        $datatable->table($table);
+        request()->replace(['filters' => ['status' => 'active']]);
+        $datatable->getResults();
+        $this->assertTrue(true); // Si pas d'exception, le test passe
+    }
+
+    public function test_get_results_or_where_without_filter_callback()
+    {
+        $datatable = new InertiaDatatable();
+
+        $column = Column::make('name');
+        $table  = EloquentTable::make(TestModel::query())->columns([$column]);
+        $datatable->table($table);
+        request()->replace(['search' => 'Alice']);
+        $results = $datatable->getResults()->get();
+        $this->assertTrue($results->contains('name', 'Alice'));
+    }
+
+    public function test_get_results_or_where_with_filter_callback()
+    {
+        $datatable = new InertiaDatatable();
+
+        $column = Column::make('name')->filter(fn($query, $value) => $query->where('name', 'like', "%$value%"));
+        $table  = EloquentTable::make(TestModel::query())->columns([$column]);
+        $datatable->table($table);
+        request()->replace(['search' => 'Alice']);
+        $results = $datatable->getResults()->get();
+        $this->assertTrue($results->contains('name', 'Alice'));
+    }
+
+    public function test_get_data_without_render_html_or_icon()
+    {
+        $datatable = new InertiaDatatable();
+        // Utilise une vraie colonne Column sans callback html/icon
+        $column = Column::make('name');
+        $table  = EloquentTable::make(TestModel::query())->columns([$column]);
+        $datatable->table($table);
+        request()->replace(['pageSize' => 2]);
+        $data  = $datatable->getData();
+        $first = $data->items()[0];
+        $this->assertArrayHasKey('name', $first);
+        $this->assertArrayHasKey('name_html', $first);
+        $this->assertArrayNotHasKey('name_icon', $first);
+    }
+
+    public function test_get_filters_with_minimal_filter()
+    {
+        
+        $datatable = new InertiaDatatable();
+        $filter    = Filter::make('status', 'Status');
+        $table     = EloquentTable::make(TestModel::query())->filters([$filter]);
+        $datatable->table($table);
+        $filters = $datatable->getFilters();
+        $this->assertEquals('status', $filters[0]['name']);
+        $this->assertEquals('Status', $filters[0]['label']);
+        $this->assertEquals([], $filters[0]['options']);
+        $this->assertEquals([], $filters[0]['icons']);
+        $this->assertFalse($filters[0]['multiple']);
+    }
+
+    public function test_get_data_with_column_without_render_methods()
+    {
+        $datatable = new InertiaDatatable();
+        // Colonne sans renderHtml ni renderIcon (classe anonyme, mais héritant de Column)
+        $column = new class('name') extends Column {
+            public static function make(string $name): Column
+            {
+                return new self($name);
+            }
+
+            public function __construct($name)
+            {
+                $this->name = $name;
+            }
+        };
+        $table  = EloquentTable::make(TestModel::query())->columns([$column]);
+        $datatable->table($table);
+        request()->replace(['pageSize' => 2]);
+        $data  = $datatable->getData();
+        $first = $data->items()[0];
+        $this->assertArrayHasKey('name', $first);
+        $this->assertArrayHasKey('name_html', $first); // la méthode existe toujours
+        $this->assertArrayNotHasKey('name_icon', $first);
+    }
+
+    public function test_handle_action_with_table_action()
+    {
+        $datatable = new InertiaDatatable();
+
+        $action = TableAction::make('test_action')->handle(function ($ids) {
+            return ['processed' => $ids];
+        });
+
+        $table = EloquentTable::make(TestModel::query())->actions([$action]);
+        $datatable->table($table);
+
+        $request = new Request([
+            'action' => 'test_action',
+            'ids'    => [1, 2, 3]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        $result = $datatable->handleAction();
+        $this->assertEquals(['processed' => [1, 2, 3]], $result);
+    }
+
+    public function test_handle_action_with_action_group()
+    {
+        $datatable = new InertiaDatatable();
+
+        $groupAction = TableAction::make('group_action')->handle(function ($ids) {
+            return ['group_processed' => $ids];
+        });
+
+        $actionGroup = TableActionGroup::make('test_group')->actions([$groupAction]);
+
+        $table = EloquentTable::make(TestModel::query())->actions([$actionGroup]);
+        $datatable->table($table);
+
+        $request = new Request([
+            'action' => 'group_action',
+            'ids'    => [4, 5, 6]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        $result = $datatable->handleAction();
+        $this->assertEquals(['group_processed' => [4, 5, 6]], $result);
+    }
+
+    public function test_handle_action_with_no_matching_action()
+    {
+        $datatable = new InertiaDatatable();
+
+        $action = TableAction::make('test_action')->handle(function ($ids) {
+            return ['processed' => $ids];
+        });
+
+        $table = EloquentTable::make(TestModel::query())->actions([$action]);
+        $datatable->table($table);
+
+        $request = new Request([
+            'action' => 'non_existent_action',
+            'ids'    => [1, 2, 3]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        $result = $datatable->handleAction();
+        $this->assertNull($result);
+    }
+
+    public function test_handle_action_without_action_param()
+    {
+        $datatable = new InertiaDatatable();
+
+        $action = TableAction::make('test_action')->handle(function ($ids) {
+            return ['processed' => $ids];
+        });
+
+        $table = EloquentTable::make(TestModel::query())->actions([$action]);
+        $datatable->table($table);
+
+        $request = new Request([
+            'ids' => [1, 2, 3]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        $result = $datatable->handleAction();
+        $this->assertNull($result);
+    }
+
+    public function test_get_translations()
+    {
+        Config::set('app.locale', 'en');
+
+        // Mock the trans function to return test translations
+        $this->app->instance('translator', new class {
+            public function get($key, $replace = [], $locale = null)
+            {
+                if ($key === 'inertia-datatable::messages') {
+                    return ['search' => 'Search :term', 'filter' => 'Filter'];
+                } elseif ($key === 'vendor/inertia-datatable/messages') {
+                    return ['search' => 'Custom Search :term', 'new_key' => 'New Value'];
+                }
+
+                return [];
+            }
+        });
+
+        $datatable    = new InertiaDatatable();
+        $translations = $datatable->getProps()['translations']();
+
+        $this->assertArrayHasKey('en', $translations);
+        $this->assertEquals('Custom Search {{term}}', $translations['en']['search']);
+        $this->assertEquals('New Value', $translations['en']['new_key']);
+        $this->assertEquals('Filter', $translations['en']['filter']);
+    }
+
+    public function test_convert_placeholders()
+    {
+        $datatable = new InertiaDatatable();
+
+        // Use reflection to access protected method
+        $reflectionMethod = new \ReflectionMethod(InertiaDatatable::class, 'convertPlaceholders');
+        $reflectionMethod->setAccessible(true);
+
+        $translations = [
+            'search'          => 'Search :term',
+            'filter'          => 'Filter by :field with :value',
+            'no_placeholders' => 'No placeholders here',
+            'nested'          => [
+                'key' => 'Nested :value'
+            ]
+        ];
+
+        $result = $reflectionMethod->invoke($datatable, $translations);
+
+        $this->assertEquals('Search {{term}}', $result['search']);
+        $this->assertEquals('Filter by {{field}} with {{value}}', $result['filter']);
+        $this->assertEquals('No placeholders here', $result['no_placeholders']);
+        $this->assertEquals('Nested :value', $result['nested']['key']); // The method doesn't process nested arrays recursively
+    }
+
+    public function test_get_columns_with_checkbox_column()
+    {
+        $datatable = new InertiaDatatable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            CheckboxColumn::make('id'),
+            Column::make('name')->label('Nom'),
+        ]);
+        $datatable->table($table);
+        $columns = $datatable->getColumns();
+
+        $this->assertEquals([
+            [
+                'name'         => 'checks',
+                'label'        => 'Checks',
+                'hasIcon'      => false,
+                'sortable'     => false,
+                'toggable'     => false,
+                'iconPosition' => 'left',
+                'searchable'   => false,
+                'type'         => 'checkbox'
+            ],
+            [
+                'name'         => 'name',
+                'label'        => 'Nom',
+                'hasIcon'      => false,
+                'sortable'     => true,
+                'toggable'     => true,
+                'iconPosition' => 'left',
+                'searchable'   => true,
+            ]
+        ], $columns);
+    }
+
+    public function test_get_actions_with_table_action()
+    {
+        $datatable = new InertiaDatatable();
+        $action    = TableAction::make('edit')
+                                ->label('Edit')
+                                ->styles('primary')
+                                ->icon('pencil')
+                                ->props(['confirm' => true]);
+
+        $table = EloquentTable::make(TestModel::query())->actions([$action]);
+        $datatable->table($table);
+
+        $actions = $datatable->getActions();
+
+        $this->assertEquals([
+            [
+                'type'         => 'action',
+                'name'         => 'edit',
+                'label'        => 'Edit',
+                'styles'       => 'primary',
+                'icon'         => 'pencil',
+                'iconPosition' => 'left',
+                'props'        => ['confirm' => true],
+            ]
+        ], $actions);
+    }
+
+    public function test_get_actions_with_action_group()
+    {
+        $datatable = new InertiaDatatable();
+
+        $action1 = TableAction::make('edit')->label('Edit');
+        $action2 = TableAction::make('delete')->label('Delete');
+
+        $group = TableActionGroup::make('actions')
+                                 ->label('Actions')
+                                 ->styles('secondary')
+                                 ->icon('menu')
+                                 ->props(['dropdown' => true])
+                                 ->actions([$action1, $action2]);
+
+        $table = EloquentTable::make(TestModel::query())->actions([$group]);
+        $datatable->table($table);
+
+        $actions = $datatable->getActions();
+
+        $this->assertEquals([
+            [
+                'type'         => 'group',
+                'name'         => 'actions',
+                'label'        => 'Actions',
+                'styles'       => 'secondary',
+                'icon'         => 'menu',
+                'iconPosition' => 'left',
+                'props'        => ['dropdown' => true],
+                'actions'      => [
+                    [
+                        'type'         => 'action',
+                        'name'         => 'edit',
+                        'label'        => 'Edit',
+                        'styles'       => null,
+                        'icon'         => null,
+                        'iconPosition' => 'left',
+                        'props'        => [],
+                    ],
+                    [
+                        'type'         => 'action',
+                        'name'         => 'delete',
+                        'label'        => 'Delete',
+                        'styles'       => null,
+                        'icon'         => null,
+                        'iconPosition' => 'left',
+                        'props'        => [],
+                    ]
+                ]
+            ]
+        ], $actions);
+    }
+
+    public function test_get_data_with_checkbox_column()
+    {
+        $datatable = new InertiaDatatable();
+
+        $checkboxColumn = CheckboxColumn::make('id')
+                                        ->checked(function ($model) {
+                                            return $model->status === 'active';
+                                        })
+                                        ->disabled(function ($model) {
+                                            return $model->name === 'Bob';
+                                        });
+
+        $table = EloquentTable::make(TestModel::query())->columns([$checkboxColumn]);
+        $datatable->table($table);
+
+        request()->replace(['pageSize' => 10]);
+        $data = $datatable->getData();
+
+        // Check that we have the expected number of items
+        $this->assertGreaterThanOrEqual(3, $data->total());
+
+        // Check the first item (Alice)
+        $alice = $data->getCollection()->firstWhere('name', 'Alice');
+        $this->assertNotNull($alice);
+        $this->assertArrayHasKey('checks_value', $alice);
+        $this->assertArrayHasKey('checks_checked', $alice);
+        $this->assertArrayHasKey('checks_disabled', $alice);
+
+        // Alice should have ID as value, be checked (active), and not disabled
+        $this->assertEquals($alice['id'], $alice['checks_value']);
+        $this->assertTrue($alice['checks_checked']);
+        $this->assertFalse($alice['checks_disabled']);
+
+        // Check Bob (should be disabled)
+        $bob = $data->getCollection()->firstWhere('name', 'Bob');
+        $this->assertNotNull($bob);
+        $this->assertTrue($bob['checks_disabled']);
+        $this->assertFalse($bob['checks_checked']); // Bob is inactive
+
+        // Check Charlie (should be checked but not disabled)
+        $charlie = $data->getCollection()->firstWhere('name', 'Charlie');
+        $this->assertNotNull($charlie);
+        $this->assertTrue($charlie['checks_checked']); // Charlie is active
+        $this->assertFalse($charlie['checks_disabled']);
+    }
+
+    public function test_get_columns_with_action_column()
+    {
+        $datatable = new InertiaDatatable();
+
+        $actionGroup = ColumnActionGroup::make()
+                                        ->icon('Ellipsis')
+                                        ->actions([
+                                            ColumnAction::make('edit')
+                                                        ->label('Edit')
+                                                        ->icon('Edit')
+                                        ]);
+
+        $table = EloquentTable::make(TestModel::query())->columns([
+            ActionColumn::make('actions')
+                        ->label('Actions')
+                        ->action($actionGroup),
+            Column::make('name')->label('Nom'),
+        ]);
+
+        $datatable->table($table);
+        $columns = $datatable->getColumns();
+
+        $this->assertEquals([
+            [
+                'name'         => 'actions',
+                'label'        => 'Actions',
+                'hasIcon'      => false,
+                'sortable'     => false,
+                'toggable'     => true,
+                'iconPosition' => 'left',
+                'searchable'   => false,
+                'type'         => 'action',
+                'action'       => $actionGroup
+            ],
+            [
+                'name'         => 'name',
+                'label'        => 'Nom',
+                'hasIcon'      => false,
+                'sortable'     => true,
+                'toggable'     => true,
+                'iconPosition' => 'left',
+                'searchable'   => true,
+            ]
+        ], $columns);
+    }
+
+    public function test_get_data_with_action_column()
+    {
+        $datatable = new InertiaDatatable();
+
+        // Create actions with URL callbacks
+        $editAction = ColumnAction::make('edit')
+                                  ->label('Edit')
+                                  ->icon('Edit')
+                                  ->url(function ($model) {
+                                      return "items/{$model->id}/edit";
+                                  });
+
+        $deleteAction = ColumnAction::make('delete')
+                                    ->label('Delete')
+                                    ->icon('Trash2')
+                                    ->url(function ($model) {
+                                        return "items/{$model->id}/delete";
+                                    });
+
+        $viewAction = ColumnAction::make('view')
+                                  ->label('View')
+                                  ->icon('Eye');  // No URL callback for this action
+
+        // Create action group
+        $actionGroup = ColumnActionGroup::make()
+                                        ->label('Actions')
+                                        ->icon('Ellipsis', 'right')
+                                        ->props(['variant' => 'outline'])
+                                        ->actions([$editAction, $deleteAction, $viewAction]);
+
+        // Create table with action column
+        $table = EloquentTable::make(TestModel::query())->columns([
+            ActionColumn::make('actions')
+                        ->label('Actions')
+                        ->action($actionGroup),
+            Column::make('name')
+        ]);
+
+        $datatable->table($table);
+
+        // Get data
+        request()->replace(['pageSize' => 10]);
+        $data = $datatable->getData();
+
+        // Check that we have the expected number of items
+        $this->assertGreaterThanOrEqual(3, $data->total());
+
+        // Check the first item (Alice)
+        $alice = $data->getCollection()->firstWhere('name', 'Alice');
+        $this->assertNotNull($alice);
+
+        // Check that the action column is correctly processed
+        $this->assertArrayHasKey('actions_action', $alice);
+        $actionData = $alice['actions_action'];
+
+        // Verify the action group properties
+        $this->assertEquals('Actions', $actionData['label']);
+        $this->assertEquals('Ellipsis', $actionData['icon']);
+        $this->assertEquals('right', $actionData['iconPosition']);
+        $this->assertEquals(['variant' => 'outline'], $actionData['props']);
+
+        // Check that the actions array has 3 items
+        $this->assertCount(3, $actionData['actions']);
+
+        // Check that the edit action has a URL
+        $this->assertEquals('Edit', $actionData['actions'][0]['label']);
+        $this->assertStringStartsWith("items/", $actionData['actions'][0]['url']);
+        $this->assertStringEndsWith("/edit", $actionData['actions'][0]['url']);
+
+        // Check that the delete action has a URL
+        $this->assertEquals('Delete', $actionData['actions'][1]['label']);
+        $this->assertStringStartsWith("items/", $actionData['actions'][1]['url']);
+        $this->assertStringEndsWith("/delete", $actionData['actions'][1]['url']);
+
+        // Check that the view action doesn't have a URL
+        $this->assertEquals('View', $actionData['actions'][2]['label']);
+        $this->assertArrayNotHasKey('url', $actionData['actions'][2]);
+    }
+
+    public function test_get_data_with_non_group_action_column()
+    {
+        $datatable = new InertiaDatatable();
+
+        // Create a simple array action instead of a ColumnActionGroup
+
+        // Create table with action column that has a non-group action
+        $table = EloquentTable::make(TestModel::query())->columns([
+            ActionColumn::make('actions')
+                        ->label('Actions')
+                        ->action(ColumnAction::make('edit')
+                                             ->label('Edit')
+                                             ->url(function ($model) {
+                                                 return "items/{$model->id}/edit";
+                                             })),
+            Column::make('name')
+        ]);
+
+        $datatable->table($table);
+
+        // Get data
+        request()->replace(['pageSize' => 10]);
+        $data = $datatable->getData();
+
+        // Check that we have the expected number of items
+        $this->assertGreaterThanOrEqual(3, $data->total());
+
+        // Check the first item (Alice)
+        $alice = $data->getCollection()->firstWhere('name', 'Alice');
+        $this->assertNotNull($alice);
+
+        // Check that the action column is correctly processed
+        $this->assertArrayHasKey('actions_action', $alice);
+    }
+}
