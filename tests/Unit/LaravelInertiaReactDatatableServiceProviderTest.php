@@ -39,10 +39,4 @@ class InertiaDatatableServiceProviderTest extends TestCase
     {
         $this->assertArrayHasKey('inertia-datatable', config()->all());
     }
-
-    public function test_inertia_datatable_is_bound_to_container()
-    {
-        $instance = $this->app->make(InertiaDatatable::class);
-        $this->assertInstanceOf(InertiaDatatable::class, $instance);
-    }
 }

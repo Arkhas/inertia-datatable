@@ -42,9 +42,5 @@ class InertiaDatatableServiceProvider extends ServiceProvider
             __DIR__.'/../config/inertia-datatable.php',
             'inertia-datatable'
         );
-
-        $this->app->bind(InertiaDatatable::class, function () {
-            return new InertiaDatatable();
-        });
     }
 }

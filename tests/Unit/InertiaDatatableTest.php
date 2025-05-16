@@ -7,6 +7,7 @@ use Arkhas\InertiaDatatable\Columns\ColumnActionGroup;
 use Arkhas\InertiaDatatable\Filters\Filter;
 use Illuminate\Console\View\Components\Task;
 use Tests\TestCase;
+use Tests\TestModels\TestModelDataTable;
 use Tests\TestModels\WithTestModels;
 use Tests\TestModels\TestModel;
 use Arkhas\InertiaDatatable\InertiaDatatable;
@@ -37,7 +38,7 @@ class InertiaDatatableTest extends TestCase
     public function test_can_render_datatable_with_columns()
     {
         
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name'),
             Column::make('status'),
@@ -50,7 +51,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_render_without_filters_or_sorting()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $query = TestModel::query();
         $table = EloquentTable::make($query)->columns([
             Column::make('name'),
@@ -67,7 +68,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_render_with_invalid_sort_column()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         $query = TestModel::query();
         $table = EloquentTable::make($query)->columns([
@@ -86,7 +87,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_render_with_no_matching_filters()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         $query = TestModel::query();
         $table = EloquentTable::make($query)->columns([
@@ -103,9 +104,27 @@ class InertiaDatatableTest extends TestCase
         $this->assertEquals(['Alice', 'Bob', 'Charlie'], $query->pluck('name')->toArray());
     }
 
+    public function test_apply_filter_when_not_searchable()
+    {
+        $datatable = new TestModelDataTable();
+
+        $query = TestModel::query();
+        $table = EloquentTable::make($query)->columns([
+            Column::make('name')->searchable(false),
+        ]);
+
+        $datatable->table($table);
+
+        request()->merge(['search' => 'value']);
+        $datatable->render('Datatable');
+
+        // SQL should not change since column is not searchable
+        $this->assertEquals($datatable->getTable()->getQuery()->toSql(), TestModel::query()->toSql());
+    }
+
     public function test_get_current_filter_values_with_comma_separated_string()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $filters   = [
             'status' => 'active,inactive',
             'name'   => 'Alice',
@@ -118,7 +137,7 @@ class InertiaDatatableTest extends TestCase
     public function test_get_props_returns_expected_keys()
     {
         
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name'),
         ]);
@@ -137,7 +156,7 @@ class InertiaDatatableTest extends TestCase
     public function test_get_columns_returns_expected_format()
     {
         
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name')->label('Nom'),
         ]);
@@ -159,7 +178,7 @@ class InertiaDatatableTest extends TestCase
     public function test_get_filters_returns_expected_format()
     {
         
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->filters([]);
         $datatable->table($table);
         $filters = $datatable->getFilters();
@@ -168,7 +187,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_results_with_search_and_sort()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name'),
             Column::make('status'),
@@ -181,7 +200,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_data_returns_paginated_collection()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name'),
         ]);
@@ -194,21 +213,21 @@ class InertiaDatatableTest extends TestCase
 
     public function test_render_throws_error_without_table()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $this->expectException(\Error::class);
         $datatable->render('Datatable');
     }
 
     public function test_get_results_throws_error_without_table()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $this->expectException(\Error::class);
         $datatable->getResults();
     }
 
     public function test_get_results_applies_filter_and_direct_column_filter()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name'),
             Column::make('status'),
@@ -223,7 +242,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_results_applies_filter_with_callback_and_direct_column_filter()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name'),
             Column::make('status'),
@@ -242,7 +261,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_results_with_invalid_page_size_sets_minimum()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name'),
         ]);
@@ -254,7 +273,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_data_adds_html_and_icon_keys()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $column    = Column::make('name')
                            ->html(fn($model) => '<b>' . $model->name . '</b>')
                            ->icon(fn($model) => $model->name === 'Alice' ? 'icon' : null);
@@ -270,7 +289,7 @@ class InertiaDatatableTest extends TestCase
     public function test_get_columns_label_fallback()
     {
         
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('foo_bar'),
         ]);
@@ -282,7 +301,7 @@ class InertiaDatatableTest extends TestCase
     public function test_get_filters_with_multiple_and_icons()
     {
         
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $filter    = Filter::make('status', 'Status')
                            ->options(['active', 'inactive'])
                            ->icons(['icon1', 'icon2'])
@@ -297,7 +316,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_request_returns_app_instance_if_not_set()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         // On n'appelle pas setRequest, donc getRequest doit retourner app(Request::class)
         $request = $datatable->getProps()['pageSize'](); // getProps utilise getRequest
         $this->assertNotNull($request);
@@ -305,7 +324,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_results_applies_additional_search_fields()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name'),
         ]);
@@ -317,7 +336,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_results_applies_no_filter_if_name_not_found()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         // Utilise la méthode make pour instancier Filter correctement
         $filter = Filter::make('not_status', 'Not Status');
         $table  = EloquentTable::make(TestModel::query())->filters([$filter]);
@@ -329,7 +348,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_results_or_where_without_filter_callback()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         $column = Column::make('name');
         $table  = EloquentTable::make(TestModel::query())->columns([$column]);
@@ -341,7 +360,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_results_or_where_with_filter_callback()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         $column = Column::make('name')->filter(fn($query, $value) => $query->where('name', 'like', "%$value%"));
         $table  = EloquentTable::make(TestModel::query())->columns([$column]);
@@ -353,7 +372,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_data_without_render_html_or_icon()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         // Utilise une vraie colonne Column sans callback html/icon
         $column = Column::make('name');
         $table  = EloquentTable::make(TestModel::query())->columns([$column]);
@@ -369,7 +388,7 @@ class InertiaDatatableTest extends TestCase
     public function test_get_filters_with_minimal_filter()
     {
         
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $filter    = Filter::make('status', 'Status');
         $table     = EloquentTable::make(TestModel::query())->filters([$filter]);
         $datatable->table($table);
@@ -383,7 +402,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_data_with_column_without_render_methods()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         // Colonne sans renderHtml ni renderIcon (classe anonyme, mais héritant de Column)
         $column = new class('name') extends Column {
             public static function make(string $name): Column
@@ -408,7 +427,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_handle_action_with_table_action()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         $action = TableAction::make('test_action')->handle(function ($ids) {
             return ['processed' => $ids];
@@ -430,7 +449,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_handle_action_with_action_group()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         $groupAction = TableAction::make('group_action')->handle(function ($ids) {
             return ['group_processed' => $ids];
@@ -454,7 +473,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_handle_action_with_no_matching_action()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         $action = TableAction::make('test_action')->handle(function ($ids) {
             return ['processed' => $ids];
@@ -476,7 +495,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_handle_action_without_action_param()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         $action = TableAction::make('test_action')->handle(function ($ids) {
             return ['processed' => $ids];
@@ -513,7 +532,7 @@ class InertiaDatatableTest extends TestCase
             }
         });
 
-        $datatable    = new InertiaDatatable();
+        $datatable    = new TestModelDataTable();
         $translations = $datatable->getProps()['translations']();
 
         $this->assertArrayHasKey('en', $translations);
@@ -524,7 +543,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_convert_placeholders()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         // Use reflection to access protected method
         $reflectionMethod = new \ReflectionMethod(InertiaDatatable::class, 'convertPlaceholders');
@@ -549,7 +568,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_columns_with_checkbox_column()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             CheckboxColumn::make('id'),
             Column::make('name')->label('Nom'),
@@ -582,7 +601,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_actions_with_table_action()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
         $action    = TableAction::make('edit')
                                 ->label('Edit')
                                 ->styles('primary')
@@ -609,7 +628,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_actions_with_action_group()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         $action1 = TableAction::make('edit')->label('Edit');
         $action2 = TableAction::make('delete')->label('Delete');
@@ -661,7 +680,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_data_with_checkbox_column()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         $checkboxColumn = CheckboxColumn::make('id')
                                         ->checked(function ($model) {
@@ -707,7 +726,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_columns_with_action_column()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         $actionGroup = ColumnActionGroup::make()
                                         ->icon('Ellipsis')
@@ -753,7 +772,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_data_with_action_column()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         // Create actions with URL callbacks
         $editAction = ColumnAction::make('edit')
@@ -832,7 +851,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_data_with_non_group_action_column()
     {
-        $datatable = new InertiaDatatable();
+        $datatable = new TestModelDataTable();
 
         // Create a simple array action instead of a ColumnActionGroup
 
