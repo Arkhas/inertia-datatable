@@ -181,7 +181,7 @@ class Column
         return $this;
     }
 
-    public function issearchable(): bool
+    public function isSearchable(): bool
     {
         return $this->searchable;
     }
@@ -193,7 +193,7 @@ class Column
             'label'      => $this->getLabel() ?? ucfirst(str_replace('_', ' ', $this->getName())),
             'hasIcon'    => $this->getIconCallback() !== null,
             'sortable'   => $this->isSortable(),
-            'searchable' => $this->issearchable(),
+            'searchable' => $this->isSearchable(),
             'toggable'   => $this->isToggable()
         ];
 

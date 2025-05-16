@@ -45,18 +45,16 @@ use App\Models\User;
 $datatable = new InertiaDatatable();
 
 // Set up the table columns
-$table = new Table();
+$table = new Table(User::query());
 $table->columns([
     // Define your columns here
 ]);
 
 // Set up the query
-$query = User::query();
 
 // Render the datatable
 return $datatable
     ->table($table)
-    ->query($query)
     ->render('Users/Index');
 ```
 
@@ -73,7 +71,7 @@ php artisan vendor:publish --tag=assets
 Then, install the npm package:
 
 ```bash
-npm install @arkhas/inertia-datatable
+npm i @arkhas/inertia-datatable
 # or
 yarn add @arkhas/inertia-datatable
 ```
@@ -130,19 +128,7 @@ export default function Users() {
 }
 ```
 
-The `Datatable` component will automatically fetch data from the backend using the route specified in the `route` prop. It will also handle pagination, sorting, and filtering.
-
-#### Props
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `route` | string | The name of the route to fetch data from. |
-
 ### Internationalization (i18n)
-
-The package supports internationalization using i18next and react-i18next. Translations are loaded from PHP files in the `/lang` directory.
-
-#### Configuration
 
 Translations are defined in PHP files in the package's `/lang` directory. These can be published to your Laravel application's `/lang/vendor/inertia-datatable` directory for customization.
 
@@ -156,7 +142,6 @@ This will publish the translation files to:
 
 - `/lang/vendor/inertia-datatable/en/messages.php`: English translations
 - `/lang/vendor/inertia-datatable/fr/messages.php`: French translations
-- `/lang/vendor/inertia-datatable/es/messages.php`: Spanish translations
 
 Example of a translation file (`messages.php`):
 
@@ -190,69 +175,6 @@ return [
 ```
 
 The package will automatically load these translations and make them available to the React components. Note that Laravel's placeholders (`:count`, `:total`, etc.) are automatically converted to the format expected by i18next (`{{count}}`, `{{total}}`, etc.) when passed to the frontend.
-
-#### Usage in React
-
-To use the translations in your React application, you need to initialize the i18n system with the translations from the PHP files:
-
-```jsx
-import { initializeI18n, useTranslation } from '@arkhas/inertia-datatable';
-
-// Initialize i18n with the translations from PHP files
-// This should be done once in your application, typically in a layout component
-// The translations are automatically passed to the frontend by the package
-initializeI18n(window.config?.inertiaDatatable);
-
-// In your component
-function MyComponent() {
-  const { t } = useTranslation();
-
-  return (
-    <div>
-      <h1>{t('some_translation_key')}</h1>
-    </div>
-  );
-}
-```
-
-The language is automatically detected from the `lang` attribute of the HTML document. You can also change the language programmatically:
-
-```jsx
-import { i18n } from '@arkhas/inertia-datatable';
-
-// Change the language
-i18n.changeLanguage('fr');
-```
-
-Note: Make sure your Laravel application has the appropriate PHP translation files in the `/lang/vendor/inertia-datatable/{locale}/messages.php` directory for each language you want to support. You can publish the default translation files using the `php artisan vendor:publish --tag=translations` command.
-
-#### Usage in PHP
-
-The package also supports translations in PHP classes. When defining columns and filters, you can use translation keys for labels:
-
-```php
-use Arkhas\InertiaDatatable\Columns\Column;
-use Arkhas\InertiaDatatable\Filters\Filter;
-use Arkhas\InertiaDatatable\Filters\FilterOption;
-
-// Define a column with a translatable label
-$column = Column::make('name')
-    ->label('column.name'); // Will be translated using Laravel's __() function
-
-// Define a filter with a translatable label
-$filter = Filter::make('status')
-    ->label('filter.status'); // Will be translated using Laravel's __() function
-
-// Define filter options with translatable labels
-$filter->options([
-    FilterOption::make('active')
-        ->label('filter.status.active'), // Will be translated
-    FilterOption::make('inactive')
-        ->label('filter.status.inactive'), // Will be translated
-]);
-```
-
-Make sure to define these translation keys in your Laravel language files.
 
 ## License
 

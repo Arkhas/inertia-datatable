@@ -99,17 +99,12 @@ class ColumnTest extends TestCase
     public function test_searchable_and_is_searchable()
     {
         $column = Column::make('foo')->searchable(false);
-        $this->assertFalse($column->issearchable());
+        $this->assertFalse($column->isSearchable());
 
         $column = Column::make('foo')->searchable(true);
-        $this->assertTrue($column->issearchable());
+        $this->assertTrue($column->isSearchable());
     }
 
-    // SUPPRIMÉ : test_orderable_and_is_orderable car la méthode n'existe pas dans Column
-    // public function test_orderable_and_is_orderable() { /* ... */ }
-
-    // SUPPRIMÉ : test_apply_order_when_not_orderable car la méthode n'existe pas dans Column
-    // public function test_apply_order_when_not_orderable() { /* ... */ }
 
     public function test_apply_filter_when_not_searchable()
     {

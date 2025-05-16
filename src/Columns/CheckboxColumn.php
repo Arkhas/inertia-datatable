@@ -11,7 +11,7 @@ class CheckboxColumn extends Column
     protected $valueCallback = null;
     protected $checkedCallback = null;
     protected $disabledCallback = null;
-    protected $valueField = 'id';
+    protected string $valueField = 'id';
     protected bool $toggable = false;
 
     public static function make($valueField = 'id'): self
@@ -19,9 +19,8 @@ class CheckboxColumn extends Column
         $instance = new self();
         $instance->name = 'checks';
 
-        // Set sortable, orderable, and searchable to false by default for checkbox columns
+        // Set sortable, and searchable to false by default for checkbox columns
         $instance->sortable = false;
-        $instance->orderable = false;
         $instance->searchable = false;
 
         // Set the value field (can be a string or a callback)

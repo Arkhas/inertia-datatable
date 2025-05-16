@@ -170,7 +170,7 @@ class InertiaDatatable
                 'label'      => $column->getLabel() ?? ucfirst(str_replace('_', ' ', $column->getName())),
                 'hasIcon'    => method_exists($column, 'getIconCallback') && $column->getIconCallback() !== null,
                 'sortable'   => method_exists($column, 'isSortable') ? $column->isSortable() : true,
-                'searchable' => method_exists($column, 'issearchable') ? $column->issearchable() : true,
+                'searchable' => method_exists($column, 'isSearchable') ? $column->isSearchable() : true,
                 'toggable'   => method_exists($column, 'isToggable') ? $column->isToggable() : true
             ];
 
@@ -233,6 +233,11 @@ class InertiaDatatable
             $searchTerm = $request->input('search');
             $query->where(function ($q) use ($searchTerm, $columns) {
                 foreach ($columns as $column) {
+                    // Only include searchable columns
+                    if (!$column->isSearchable()) {
+                        continue;
+                    }
+
                     $columnName = $column->getName();
                     if ($column->getFilterCallback()) {
                         $q->orWhere(function ($subQuery) use ($column, $searchTerm) {

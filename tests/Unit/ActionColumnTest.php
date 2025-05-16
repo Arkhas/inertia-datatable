@@ -64,7 +64,7 @@ class ActionColumnTest extends TestCase
     public function test_is_not_searchable_by_default()
     {
         $column = ActionColumn::make();
-        $this->assertFalse($column->issearchable());
+        $this->assertFalse($column->isSearchable());
     }
 
     public function test_label_and_get_label()

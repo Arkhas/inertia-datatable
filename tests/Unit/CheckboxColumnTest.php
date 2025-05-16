@@ -110,6 +110,6 @@ class CheckboxColumnTest extends TestCase
     {
         $column = CheckboxColumn::make();
         $this->assertFalse($column->isSortable());
-        $this->assertFalse($column->issearchable());
+        $this->assertFalse($column->isSearchable());
     }
 }
