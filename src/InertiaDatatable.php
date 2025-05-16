@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 
-class InertiaDatatable
+abstract class InertiaDatatable
 {
     protected EloquentTable $table;
     protected int      $defaultPageSize;
@@ -22,7 +22,10 @@ class InertiaDatatable
     public function __construct()
     {
         $this->defaultPageSize = config('inertia-datatable.pagination.default_page_size', 25);
+        $this->setup();
     }
+
+    public abstract function setup(): void;
 
     public function table(EloquentTable $table): self
     {
