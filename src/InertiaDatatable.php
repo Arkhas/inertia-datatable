@@ -237,9 +237,9 @@ abstract class InertiaDatatable
             $query->where(function ($q) use ($searchTerm, $columns) {
                 foreach ($columns as $column) {
                     // Only include searchable columns
-                    if (!$column->isSearchable()) {
-                        continue;
-                    }
+                    //if (!$column->isSearchable()) {
+                    //    continue;
+                    //}
 
                     $columnName = $column->getName();
                     if ($column->getFilterCallback()) {
