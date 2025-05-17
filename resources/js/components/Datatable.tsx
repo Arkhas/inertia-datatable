@@ -655,6 +655,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                                     variant="outline"
                                                     size="sm"
                                                     className={`h-8 px-2 lg:px-3 ${action.styles || action.color || ''}`}
+                                                    disabled={selectedRows.length === 0}
                                                     {...action.props}
                                                 >
                                                     {action.icon && action.iconPosition !== 'right' && (
@@ -707,6 +708,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                             size="sm"
                                             className={`h-8 px-2 lg:px-3 ${action.styles || action.color || ''}`}
                                             onClick={() => handleBulkAction(action.name)}
+                                            disabled={selectedRows.length === 0}
                                             {...action.props}
                                         >
                                             {action.icon && action.iconPosition !== 'right' && (
