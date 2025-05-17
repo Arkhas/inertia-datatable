@@ -62,13 +62,13 @@ class ColumnTest extends TestCase
     public function test_render_html_without_callback()
     {
         $column = Column::make('title');
-        $model = (object)['title' => 'bar'];
+        $model  = (object)['title' => 'bar'];
         $this->assertEquals('bar', $column->renderHtml($model));
     }
 
     public function test_icon_callback_and_render_icon()
     {
-        $column = Column::make('icon')->icon(fn($model) => 'icon-'.$model->id);
+        $column = Column::make('icon')->icon(fn($model) => 'icon-' . $model->id);
         $this->assertIsCallable($column->getIconCallback());
         $model = (object)['id' => 42];
         $this->assertEquals('icon-42', $column->renderIcon($model));
@@ -77,7 +77,7 @@ class ColumnTest extends TestCase
     public function test_render_icon_without_callback()
     {
         $column = Column::make('icon');
-        $model = (object)['id' => 1];
+        $model  = (object)['id' => 1];
         $this->assertNull($column->renderIcon($model));
     }
 
@@ -108,8 +108,8 @@ class ColumnTest extends TestCase
 
     public function test_apply_filter_when_not_searchable()
     {
-        $column = Column::make('foo')->searchable(false);
-        $query = TestModel::query();
+        $column      = Column::make('foo')->searchable(false);
+        $query       = TestModel::query();
         $originalSql = $query->toSql();
 
         $column->applyFilter($query, 'test');
@@ -120,8 +120,8 @@ class ColumnTest extends TestCase
 
     public function test_apply_order_when_not_sortable()
     {
-        $column = Column::make('foo')->sortable(false);
-        $query = TestModel::query();
+        $column      = Column::make('foo')->sortable(false);
+        $query       = TestModel::query();
         $originalSql = $query->toSql();
 
         $column->applyOrder($query, 'asc');
@@ -133,19 +133,19 @@ class ColumnTest extends TestCase
     public function test_to_array()
     {
         $column = Column::make('name')
-            ->label('Name')
-            ->icon(fn($model) => 'user')
-            ->sortable(true)
-            ->searchable(true)
-            ->toggable(true);
+                        ->label('Name')
+                        ->icon(fn($model) => 'user')
+                        ->sortable(false)
+                        ->searchable(false)
+                        ->toggable(false);
 
         $expected = [
-            'name' => 'name',
-            'label' => 'Name',
-            'hasIcon' => true,
-            'sortable' => true,
-            'searchable' => true,
-            'toggable' => true,
+            'name'         => 'name',
+            'label'        => 'Name',
+            'hasIcon'      => true,
+            'sortable'     => false,
+            'searchable'   => false,
+            'toggable'     => false,
             'iconPosition' => 'left'
         ];
 
@@ -155,19 +155,25 @@ class ColumnTest extends TestCase
     public function test_to_array_with_custom_icon_position()
     {
         $column = Column::make('name')
-            ->label('Name')
-            ->icon(fn($model) => 'user', 'right');
+                        ->label('Name')
+                        ->icon(fn($model) => 'user', 'right');
 
         $expected = [
-            'name' => 'name',
-            'label' => 'Name',
-            'hasIcon' => true,
-            'sortable' => true,
-            'searchable' => true,
-            'toggable' => true,
+            'name'         => 'name',
+            'label'        => 'Name',
+            'hasIcon'      => true,
+            'sortable'     => true,
+            'searchable'   => true,
+            'toggable'     => true,
             'iconPosition' => 'right'
         ];
 
         $this->assertEquals($expected, $column->toArray());
+    }
+
+    public function test_get_full_name_without_relation_path()
+    {
+        $column = Column::make('name');
+        $this->assertEquals('name', $column->getFullName());
     }
 }

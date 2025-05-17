@@ -18,11 +18,22 @@ class Column
     protected bool    $sortable       = true;
     protected bool    $searchable     = true;
     protected bool    $toggable       = true;
+    protected ?array  $relationPath   = null;
 
     public static function make(string $name): self
     {
-        $instance       = new self();
-        $instance->name = $name;
+        $instance = new self();
+
+        // Check if the column name contains relationships (dots)
+        if (str_contains($name, '.')) {
+            $parts = explode('.', $name);
+            $instance->name = end($parts); // The actual column name is the last part
+
+            // The relation path is everything except the last part
+            $instance->relationPath = array_slice($parts, 0, -1);
+        } else {
+            $instance->name = $name;
+        }
 
         return $instance;
     }
@@ -30,6 +41,25 @@ class Column
     public function getName(): string
     {
         return $this->name;
+    }
+
+    public function getFullName(): string
+    {
+        if ($this->relationPath) {
+            return implode('.', $this->relationPath) . '.' . $this->name;
+        }
+
+        return $this->name;
+    }
+
+    public function getRelationPath(): ?array
+    {
+        return $this->relationPath;
+    }
+
+    public function hasRelation(): bool
+    {
+        return $this->relationPath !== null;
     }
 
     public function order(callable $callback): self
@@ -62,7 +92,12 @@ class Column
         if ($this->orderCallback) {
             call_user_func($this->orderCallback, $query, $order);
         } else {
-            $query->orderBy($this->name, $order);
+            if ($this->hasRelation()) {
+                 $query->orderByPowerJoins($this->getFullName(), $order);
+            } else {
+                // For regular columns, use a simple orderBy
+                $query->orderBy($this->name, $order);
+            }
         }
     }
 
@@ -81,15 +116,59 @@ class Column
                 if ($this->filterCallback) {
                     call_user_func($this->filterCallback, $query, $keyword);
                 } else {
-                    $query->where(fn($query) => $query->orWhere($this->name, 'like', "%$keyword%"));
+                    if ($this->hasRelation()) {
+                        // For relationship columns, use whereHas to search in related models
+                        $relationPath = $this->relationPath;
+                        $columnName = $this->name;
+
+                        // Build nested whereHas for each level of the relationship
+                        $currentRelation = array_shift($relationPath);
+                        $query->orWhereHas($currentRelation, function ($subQuery) use ($relationPath, $columnName, $keyword) {
+                            $this->buildNestedWhereHas($subQuery, $relationPath, $columnName, $keyword);
+                        });
+                    } else {
+                        // For regular columns, use a simple where clause
+                        $query->where(fn($query) => $query->orWhere($this->name, 'like', "%$keyword%"));
+                    }
                 }
             }
+        }
+    }
+
+    /**
+     * Recursively build nested whereHas queries for deep relationships
+     */
+    protected function buildNestedWhereHas(Builder $query, array $relationPath, string $columnName, string $keyword): void
+    {
+        if (empty($relationPath)) {
+            // We've reached the final relation, apply the where clause on the column
+            $query->where($columnName, 'like', "%$keyword%");
+        } else {
+            // We still have relations to traverse, continue with whereHas
+            $currentRelation = array_shift($relationPath);
+            $query->whereHas($currentRelation, function ($subQuery) use ($relationPath, $columnName, $keyword) {
+                $this->buildNestedWhereHas($subQuery, $relationPath, $columnName, $keyword);
+            });
         }
     }
 
     public function renderHtml(object $model): ?string
     {
         if ($this->htmlCallback === null) {
+            if ($this->hasRelation()) {
+                // Traverse the relationship path to get the final value
+                $value = $model;
+                foreach ($this->relationPath as $relation) {
+                    if (!$value || !isset($value->{$relation})) {
+                        return null; // Return null if any part of the path is null
+                    }
+                    $value = $value->{$relation};
+                }
+
+                // Get the final property value if the relationship object exists
+                return $value ? $value->{$this->name} : null;
+            }
+
             return $model->{$this->name};
         }
 

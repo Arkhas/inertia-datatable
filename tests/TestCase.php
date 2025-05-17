@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use Arkhas\InertiaDatatable\InertiaDatatableServiceProvider;
+use Kirschbaum\PowerJoins\PowerJoinsServiceProvider;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -11,7 +13,8 @@ abstract class TestCase extends BaseTestCase
     protected function getPackageProviders($app): array
     {
         return [
-            \Arkhas\InertiaDatatable\InertiaDatatableServiceProvider::class,
+            InertiaDatatableServiceProvider::class,
+            PowerJoinsServiceProvider::class,
         ];
     }
 

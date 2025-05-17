@@ -241,12 +241,12 @@ abstract class InertiaDatatable
                     //    continue;
                     //}
 
-                    $columnName = $column->getName();
-                    if ($column->getFilterCallback()) {
+                    if ($column->getFilterCallback() || $column->hasRelation()) {
                         $q->orWhere(function ($subQuery) use ($column, $searchTerm) {
                             $column->applyFilter($subQuery, $searchTerm);
                         });
                     } else {
+                        $columnName = $column->getName();
                         $q->orWhere($columnName, 'like', "%{$searchTerm}%");
                     }
                 }

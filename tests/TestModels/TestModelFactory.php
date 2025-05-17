@@ -8,11 +8,12 @@ class TestModelFactory extends Factory
 {
     protected $model = TestModel::class;
 
-    public function definition()
+    public function definition():array
     {
         return [
             'name' => $this->faker->name,
             'status' => $this->faker->randomElement(['active', 'inactive']),
+            'user_id' => User::factory(),
         ];
     }
 }

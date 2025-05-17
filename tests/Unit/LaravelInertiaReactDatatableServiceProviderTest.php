@@ -39,4 +39,13 @@ class InertiaDatatableServiceProviderTest extends TestCase
     {
         $this->assertArrayHasKey('inertia-datatable', config()->all());
     }
+
+    public function test_translations_are_published()
+    {
+        $filesystem = new Filesystem();
+        $this->artisan('vendor:publish', ['--tag' => 'translations'])
+            ->assertExitCode(0);
+
+        $this->assertTrue($filesystem->exists(lang_path('vendor/inertia-datatable')));
+    }
 }
