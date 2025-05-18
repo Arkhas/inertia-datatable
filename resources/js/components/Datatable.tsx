@@ -123,8 +123,13 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
 
     // State for visible columns and selected rows
     const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({});
-    const [selectedRows, setSelectedRows] = useState<number[]>([]);
+    const [selectedRows, setSelectedRows] = useState<(number | string)[]>([]);
     const [selectedFilterValues, setSelectedFilterValues] = useState<Record<string, Set<string>>>({});
+
+    // Helper function to check if a row is selected
+    const isRowSelected = (rowId: number | string): boolean => {
+        return selectedRows.some(id => String(id) === String(rowId));
+    };
 
     // Format columns for display
     const formattedColumns = columns ? columns.map(column => ({
@@ -423,8 +428,8 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
 
     const handleSelectRow = (rowId: number | string) => {
         setSelectedRows((prev) => {
-            if (prev.includes(rowId)) {
-                return prev.filter((id) => id !== rowId);
+            if (isRowSelected(rowId)) {
+                return prev.filter((id) => String(id) !== String(rowId));
             } else {
                 return [...prev, rowId];
             }
@@ -432,22 +437,43 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
     };
 
     const handleSelectAllRows = () => {
-        if (selectedRows.length === formattedData.length) {
-            setSelectedRows([]);
+        // Get all row IDs from checkbox columns if available
+        const checkboxColumn = columns.find(col => col.type === 'checkbox');
+        if (checkboxColumn) {
+            const columnName = checkboxColumn.name;
+
+            // Get all available (non-disabled) checkbox values
+            const availableRowIds = formattedData
+                .map((row) => {
+                    const value = row[`${columnName}_value`];
+                    const isDisabled = row[`${columnName}_disabled`];
+                    // Only include rows with valid values that aren't disabled
+                    return (isDisabled || value === undefined || value === null) ? null : value;
+                })
+                .filter(id => id !== null);
+
+            // Check if all available checkboxes are already selected
+            const allAvailableSelected = availableRowIds.length > 0 && 
+                availableRowIds.every(id => isRowSelected(id));
+
+            if (allAvailableSelected) {
+                // If all available are selected, deselect them
+                const newSelectedRows = selectedRows.filter(id => !availableRowIds.some(availableId => String(id) === String(availableId)));
+                setSelectedRows(newSelectedRows);
+            } else {
+                // If not all available are selected, select all available
+                const newSelectedRows = [...selectedRows];
+                availableRowIds.forEach(id => {
+                    if (!isRowSelected(id)) {
+                        newSelectedRows.push(id);
+                    }
+                });
+                setSelectedRows(newSelectedRows);
+            }
         } else {
-            // Get all row IDs from checkbox columns if available
-            const checkboxColumn = columns.find(col => col.type === 'checkbox');
-            if (checkboxColumn) {
-                const columnName = checkboxColumn.name;
-                const rowIds = formattedData
-                    .map((row) => {
-                        const value = row[`${columnName}_value`];
-                        const isDisabled = row[`${columnName}_disabled`];
-                        // Only include rows with valid values that aren't disabled
-                        return (isDisabled || value === undefined || value === null) ? null : value;
-                    })
-                    .filter(id => id !== null);
-                setSelectedRows(rowIds);
+            // For non-checkbox columns, use the original logic
+            if (selectedRows.length === formattedData.length) {
+                setSelectedRows([]);
             } else {
                 // Fallback to using only valid row.id values (no index fallback)
                 const validRowIds = formattedData
@@ -766,7 +792,23 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                         isSortable={column.sortable}
                                         isToggable={column.toggable}
                                         isCheckboxColumn={column.type === 'checkbox'}
-                                        isAllChecked={selectedRows.length === data.total && data.total > 0}
+                                        isAllChecked={column.type === 'checkbox' ? 
+                                            // For checkbox columns, check if all available (non-disabled) checkboxes are selected
+                                            formattedData
+                                                .filter(row => {
+                                                    const value = row[`${column.key}_value`];
+                                                    const isDisabled = row[`${column.key}_disabled`];
+                                                    // Only include rows with valid values that aren't disabled
+                                                    return value !== undefined && value !== null && !isDisabled;
+                                                })
+                                                .every(row => isRowSelected(row[`${column.key}_value`])) &&
+                                            // Make sure there's at least one available checkbox
+                                            formattedData.some(row => {
+                                                const value = row[`${column.key}_value`];
+                                                const isDisabled = row[`${column.key}_disabled`];
+                                                return value !== undefined && value !== null && !isDisabled;
+                                            })
+                                            : selectedRows.length === data.total && data.total > 0}
                                         onCheckboxChange={handleSelectAllRows}
                                         onSort={(columnKey, sortDirection) => {
                                             if (!column.sortable) return;
@@ -784,12 +826,12 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                         {formattedData.map((row, index) => (
                             <TableRow
                                 key={row.id !== undefined && row.id !== null ? (typeof row.id === 'object' ? `row-obj-${index}` : String(row.id)) : `row-${index}`}
-                                className={row.id !== undefined && row.id !== null && typeof row.id !== 'object' && selectedRows.includes(row.id as number | string) ? "bg-muted/50" : ""}>
+                                className={row.id !== undefined && row.id !== null && typeof row.id !== 'object' && isRowSelected(row.id as number | string) ? "bg-muted/50" : ""}>
                                 {/* Only show the row checkbox if there's no checkbox column AND the row has a valid ID */}
                                 {!columns.some(col => col.type === 'checkbox') && row.id !== undefined && row.id !== null && (
                                     <TableCell>
                                         <Checkbox
-                                            checked={selectedRows.includes(row.id as number | string)}
+                                            checked={isRowSelected(row.id as number | string)}
                                             onCheckedChange={() => handleSelectRow(row.id as number | string)}
                                         />
                                     </TableCell>
@@ -814,7 +856,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                             return (
                                                 <TableCell key={columnKey}>
                                                     <Checkbox
-                                                        checked={selectedRows.includes(value as number | string)}
+                                                        checked={isRowSelected(value as number | string)}
                                                         disabled={isDisabled}
                                                         value={value as string}
                                                         onCheckedChange={() => handleSelectRow(value as number | string)}
