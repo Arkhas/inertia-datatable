@@ -748,7 +748,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                             {!columns.some(col => col.type === 'checkbox') && (
                                 <TableHead className="w-[40px]">
                                     <Checkbox
-                                        checked={selectedRows.length === formattedData.length && formattedData.length > 0}
+                                        checked={selectedRows.length === data.total && data.total > 0}
                                         onCheckedChange={handleSelectAllRows}
                                     />
                                 </TableHead>
@@ -766,7 +766,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                         isSortable={column.sortable}
                                         isToggable={column.toggable}
                                         isCheckboxColumn={column.type === 'checkbox'}
-                                        isAllChecked={selectedRows.length === formattedData.length && formattedData.length > 0}
+                                        isAllChecked={selectedRows.length === data.total && data.total > 0}
                                         onCheckboxChange={handleSelectAllRows}
                                         onSort={(columnKey, sortDirection) => {
                                             if (!column.sortable) return;
