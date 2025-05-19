@@ -37,7 +37,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_can_render_datatable_with_columns()
     {
-        
+
         $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name'),
@@ -52,8 +52,8 @@ class InertiaDatatableTest extends TestCase
     public function test_render_without_filters_or_sorting()
     {
         $datatable = new TestModelDataTable();
-        $query = TestModel::query();
-        $table = EloquentTable::make($query)->columns([
+        $query     = TestModel::query();
+        $table     = EloquentTable::make($query)->columns([
             Column::make('name'),
             Column::make('status'),
         ]);
@@ -108,6 +108,7 @@ class InertiaDatatableTest extends TestCase
     {
         $datatable = new TestModelDataTable();
 
+        // Create a query that directly filters for active status
         $query = TestModel::query();
         $table = EloquentTable::make($query)->columns([
             Column::make('name')->searchable(false),
@@ -115,11 +116,42 @@ class InertiaDatatableTest extends TestCase
 
         $datatable->table($table);
 
-        request()->merge(['search' => 'value']);
-        $datatable->render('Datatable');
+        // Verify that the searchable flag is correctly set
+        $columns = $datatable->getColumns();
+        $this->assertFalse($columns[0]['searchable']);
 
-        // SQL should not change since column is not searchable
-        $this->assertEquals($datatable->getTable()->getQuery()->toSql(), TestModel::query()->toSql());
+        // Now add a searchable column and verify it works
+        $table = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name')->searchable(false),
+            Column::make('status')->searchable(true),
+        ]);
+
+        $datatable->table($table);
+
+        // Verify that the searchable flags are correctly set
+        $columns = $datatable->getColumns();
+        $this->assertFalse($columns[0]['searchable']);
+        $this->assertTrue($columns[1]['searchable']);
+
+        // Test with a search term that matches the searchable column
+        request()->replace(['search' => 'active']);
+        $results = $datatable->getResults()->get();
+
+        // Should find results since the status column is searchable
+        $this->assertNotEmpty($results);
+        $this->assertTrue($results->contains('status', 'active'));
+
+        // Test with a search term that matches the non-searchable column
+        // First, let's verify that Alice exists in the database
+        $allResults = TestModel::query()->get();
+        $this->assertTrue($allResults->contains('name', 'Alice'));
+
+        // Now search for Alice with the name column not searchable
+        request()->replace(['search' => 'Alice']);
+        $results = $datatable->getResults()->get();
+
+        // Should not find any results since 'Alice' only appears in the non-searchable column
+        $this->assertEmpty($results);
     }
 
     public function test_get_current_filter_values_with_comma_separated_string()
@@ -136,7 +168,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_props_returns_expected_keys()
     {
-        
+
         $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name'),
@@ -155,7 +187,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_columns_returns_expected_format()
     {
-        
+
         $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('name')->label('Nom'),
@@ -177,7 +209,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_filters_returns_expected_format()
     {
-        
+
         $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->filters([]);
         $datatable->table($table);
@@ -233,7 +265,7 @@ class InertiaDatatableTest extends TestCase
             Column::make('status'),
         ]);
         $datatable->table($table);
-        // Simule un filtre sur status et un filtre direct sur name
+        // Simulates a filter on status and a direct filter on name
         request()->replace(['filters' => ['status' => 'active'], 'name' => 'Alice']);
         $results = $datatable->getResults()->get();
         $this->assertTrue($results->contains('name', 'Alice'));
@@ -252,7 +284,7 @@ class InertiaDatatableTest extends TestCase
                   ->query(fn($query, $value) => $query->where('status', $value))
         ]);
         $datatable->table($table);
-        // Simule un filtre sur status et un filtre direct sur name
+        // Simulates a filter on status and a direct filter on name
         request()->replace(['filters' => ['status' => 'active'], 'name' => 'Alice']);
         $results = $datatable->getResults()->get();
         $this->assertTrue($results->contains('name', 'Alice'));
@@ -288,7 +320,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_columns_label_fallback()
     {
-        
+
         $datatable = new TestModelDataTable();
         $table     = EloquentTable::make(TestModel::query())->columns([
             Column::make('foo_bar'),
@@ -300,7 +332,7 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_filters_with_multiple_and_icons()
     {
-        
+
         $datatable = new TestModelDataTable();
         $filter    = Filter::make('status', 'Status')
                            ->options(['active', 'inactive'])
@@ -317,8 +349,8 @@ class InertiaDatatableTest extends TestCase
     public function test_get_request_returns_app_instance_if_not_set()
     {
         $datatable = new TestModelDataTable();
-        // On n'appelle pas setRequest, donc getRequest doit retourner app(Request::class)
-        $request = $datatable->getProps()['pageSize'](); // getProps utilise getRequest
+        // We don't call setRequest, so getRequest should return app(Request::class)
+        $request = $datatable->getProps()['pageSize'](); // getProps uses getRequest
         $this->assertNotNull($request);
     }
 
@@ -337,7 +369,7 @@ class InertiaDatatableTest extends TestCase
     public function test_get_results_applies_no_filter_if_name_not_found()
     {
         $datatable = new TestModelDataTable();
-        // Utilise la méthode make pour instancier Filter correctement
+        // Uses the make method to instantiate Filter correctly
         $filter = Filter::make('not_status', 'Not Status');
         $table  = EloquentTable::make(TestModel::query())->filters([$filter]);
         $datatable->table($table);
@@ -358,6 +390,63 @@ class InertiaDatatableTest extends TestCase
         $this->assertTrue($results->contains('name', 'Alice'));
     }
 
+    public function test_search_with_relation_column()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a column with a relation
+        $column = Column::make('user.name');
+        $table  = EloquentTable::make(TestModel::query())->columns([$column]);
+        $datatable->table($table);
+
+        // Verify that the column has a relation
+        $this->assertTrue($column->hasRelation());
+        $this->assertEquals(['user'], $column->getRelationPath());
+
+        // Search for a user name
+        request()->replace(['search' => 'John']);
+        $results = $datatable->getResults()->get();
+
+        // Should find results since we're searching in the user relation
+        $this->assertNotEmpty($results);
+
+        // The result should include Alice, who belongs to John
+        $this->assertTrue($results->contains('name', 'Alice'));
+    }
+
+    public function test_search_with_relation_and_filter_callback()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a column with both a relation and a filter callback
+        $column = Column::make('user.name')
+                        ->filter(function ($query, $value) {
+                            $query->whereHas('user', function ($q) use ($value) {
+                                $q->where('name', 'like', "%$value%");
+                            });
+                        });
+
+        $table = EloquentTable::make(TestModel::query())->columns([$column]);
+        $datatable->table($table);
+
+        // Verify that the column has a relation
+        $this->assertTrue($column->hasRelation());
+        $this->assertEquals(['user'], $column->getRelationPath());
+
+        // Verify that the column has a filter callback
+        $this->assertNotNull($column->getFilterCallback());
+
+        // Search for a user name
+        request()->replace(['search' => 'John']);
+        $results = $datatable->getResults()->get();
+
+        // Should find results since we're searching in the user relation
+        $this->assertNotEmpty($results);
+
+        // The result should include Alice, who belongs to John
+        $this->assertTrue($results->contains('name', 'Alice'));
+    }
+
     public function test_get_results_or_where_with_filter_callback()
     {
         $datatable = new TestModelDataTable();
@@ -370,10 +459,11 @@ class InertiaDatatableTest extends TestCase
         $this->assertTrue($results->contains('name', 'Alice'));
     }
 
+
     public function test_get_data_without_render_html_or_icon()
     {
         $datatable = new TestModelDataTable();
-        // Utilise une vraie colonne Column sans callback html/icon
+        // Uses a real Column without html/icon callback
         $column = Column::make('name');
         $table  = EloquentTable::make(TestModel::query())->columns([$column]);
         $datatable->table($table);
@@ -387,9 +477,9 @@ class InertiaDatatableTest extends TestCase
 
     public function test_get_filters_with_minimal_filter()
     {
-        
+
         $datatable = new TestModelDataTable();
-        $filter    = Filter::make('status', 'Status');
+        $filter    = Filter::make('status');
         $table     = EloquentTable::make(TestModel::query())->filters([$filter]);
         $datatable->table($table);
         $filters = $datatable->getFilters();
@@ -403,7 +493,7 @@ class InertiaDatatableTest extends TestCase
     public function test_get_data_with_column_without_render_methods()
     {
         $datatable = new TestModelDataTable();
-        // Colonne sans renderHtml ni renderIcon (classe anonyme, mais héritant de Column)
+        // Column without renderHtml or renderIcon (anonymous class, but inheriting from Column)
         $column = new class('name') extends Column {
             public static function make(string $name): Column
             {
@@ -421,7 +511,7 @@ class InertiaDatatableTest extends TestCase
         $data  = $datatable->getData();
         $first = $data->items()[0];
         $this->assertArrayHasKey('name', $first);
-        $this->assertArrayHasKey('name_html', $first); // la méthode existe toujours
+        $this->assertArrayHasKey('name_html', $first); // the method still exists
         $this->assertArrayNotHasKey('name_icon', $first);
     }
 
@@ -538,6 +628,84 @@ class InertiaDatatableTest extends TestCase
         $this->assertArrayHasKey('en', $translations);
         $this->assertEquals('Custom Search {{term}}', $translations['en']['search']);
         $this->assertEquals('New Value', $translations['en']['new_key']);
+        $this->assertEquals('Filter', $translations['en']['filter']);
+    }
+
+    public function test_get_translations_with_empty_vendor_translations()
+    {
+        Config::set('app.locale', 'en');
+
+        // Mock the trans function to return test translations with empty vendor translations
+        $this->app->instance('translator', new class {
+            public function get($key, $replace = [], $locale = null)
+            {
+                if ($key === 'inertia-datatable::messages') {
+                    return ['search' => 'Search :term', 'filter' => 'Filter'];
+                } elseif ($key === 'vendor/inertia-datatable/messages') {
+                    return []; // Empty array
+                }
+
+                return [];
+            }
+        });
+
+        $datatable    = new TestModelDataTable();
+        $translations = $datatable->getProps()['translations']();
+
+        $this->assertArrayHasKey('en', $translations);
+        $this->assertEquals('Search {{term}}', $translations['en']['search']);
+        $this->assertEquals('Filter', $translations['en']['filter']);
+    }
+
+    public function test_get_translations_with_non_array_vendor_translations()
+    {
+        Config::set('app.locale', 'en');
+
+        // Mock the trans function to return test translations with non-array vendor translations
+        $this->app->instance('translator', new class {
+            public function get($key, $replace = [], $locale = null)
+            {
+                if ($key === 'inertia-datatable::messages') {
+                    return ['search' => 'Search :term', 'filter' => 'Filter'];
+                } elseif ($key === 'vendor/inertia-datatable/messages') {
+                    return 'Not an array'; // Not an array
+                }
+
+                return [];
+            }
+        });
+
+        $datatable    = new TestModelDataTable();
+        $translations = $datatable->getProps()['translations']();
+
+        $this->assertArrayHasKey('en', $translations);
+        $this->assertEquals('Search {{term}}', $translations['en']['search']);
+        $this->assertEquals('Filter', $translations['en']['filter']);
+    }
+
+    public function test_get_translations_with_non_array_package_translations()
+    {
+        Config::set('app.locale', 'en');
+
+        // Mock the trans function to return test translations with non-array package translations
+        $this->app->instance('translator', new class {
+            public function get($key, $replace = [], $locale = null)
+            {
+                if ($key === 'inertia-datatable::messages') {
+                    return 'Not an array'; // Not an array
+                } elseif ($key === 'vendor/inertia-datatable/messages') {
+                    return ['search' => 'Custom Search :term', 'filter' => 'Filter'];
+                }
+
+                return [];
+            }
+        });
+
+        $datatable    = new TestModelDataTable();
+        $translations = $datatable->getProps()['translations']();
+
+        $this->assertArrayHasKey('en', $translations);
+        $this->assertEquals('Custom Search {{term}}', $translations['en']['search']);
         $this->assertEquals('Filter', $translations['en']['filter']);
     }
 
@@ -853,17 +1021,19 @@ class InertiaDatatableTest extends TestCase
     {
         $datatable = new TestModelDataTable();
 
-        // Create a simple array action instead of a ColumnActionGroup
+        // Create a simple action instead of a ColumnActionGroup
+        $singleAction = ColumnAction::make('edit')
+                                    ->label('Edit')
+                                    ->icon('EditIcon')
+                                    ->url(function ($model) {
+                                        return "items/{$model->id}/edit";
+                                    });
 
         // Create table with action column that has a non-group action
         $table = EloquentTable::make(TestModel::query())->columns([
             ActionColumn::make('actions')
                         ->label('Actions')
-                        ->action(ColumnAction::make('edit')
-                                             ->label('Edit')
-                                             ->url(function ($model) {
-                                                 return "items/{$model->id}/edit";
-                                             })),
+                        ->action($singleAction),
             Column::make('name')
         ]);
 
@@ -882,5 +1052,36 @@ class InertiaDatatableTest extends TestCase
 
         // Check that the action column is correctly processed
         $this->assertArrayHasKey('actions_action', $alice);
+    }
+
+    public function test_clear_filter()
+    {
+        $datatable = new TestModelDataTable();
+        $table     = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name'),
+            Column::make('status'),
+        ])->filters([
+            Filter::make('status')
+                  ->options(['active', 'inactive'])
+                  ->query(fn($query, $value) => $query->where('status', $value))
+        ]);
+        $datatable->table($table);
+
+        $results = $datatable->getResults()->get();
+        $this->assertTrue($results->contains('status', 'active'));
+        $this->assertTrue($results->contains('status', 'inactive'));
+
+
+        request()->replace(['filters' => ['status' => 'active']]);
+        $results = $datatable->getResults()->get();
+        $this->assertTrue($results->doesntContain('status', 'inactive'));
+
+        request()->replace(['filters' => []]);
+
+         $results = $datatable->getResults()->get();
+        $this->assertTrue($results->contains('status', 'active'));
+        $this->assertTrue($results->contains('status', 'inactive'));
+
+
     }
 }

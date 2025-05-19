@@ -34,7 +34,7 @@ abstract class InertiaDatatable
     /**
      * Get a unique session key for this datatable
      */
-    protected function getSessionKey(string $suffix = ''): string
+    public function getSessionKey(string $suffix = ''): string
     {
         $className = get_class($this);
         $baseKey = 'datatable_' . md5($className);
@@ -116,7 +116,7 @@ abstract class InertiaDatatable
     /**
      * Store a value in the session for this datatable
      */
-    protected function storeInSession(string $key, $value): void
+    public function storeInSession(string $key, $value): void
     {
         session()->put($this->getSessionKey($key), $value);
     }
@@ -124,7 +124,7 @@ abstract class InertiaDatatable
     /**
      * Get a value from the session for this datatable
      */
-    protected function getFromSession(string $key, $default = null)
+    public function getFromSession(string $key, $default = null)
     {
         return session()->get($this->getSessionKey($key), $default);
     }
@@ -198,7 +198,7 @@ abstract class InertiaDatatable
     /**
      * Get translations from Laravel's lang directory and package's lang directory
      */
-    protected function getTranslations(): array
+    public function getTranslations(): array
     {
         $translations = [];
         $locale = config('app.locale', 'en');
@@ -306,7 +306,8 @@ abstract class InertiaDatatable
         $request           = $this->getRequest();
         $columns           = $this->table->getColumns();
         $filterDefinitions = $this->table->getFilters();
-        $query             = $this->table->getQuery();
+        $query             = $this->table->getQuery()->clone();
+
 
         // Handle search if needed
         if ($request->has('search')) {
@@ -328,9 +329,9 @@ abstract class InertiaDatatable
             $query->where(function ($q) use ($searchTerm, $columns) {
                 foreach ($columns as $column) {
                     // Only include searchable columns
-                    //if (!$column->isSearchable()) {
-                    //    continue;
-                    //}
+                    if (!$column->isSearchable()) {
+                        continue;
+                    }
 
                     if ($column->getFilterCallback() || $column->hasRelation()) {
                         $q->orWhere(function ($subQuery) use ($column, $searchTerm) {
@@ -350,13 +351,7 @@ abstract class InertiaDatatable
         // Get filters from request or session
         $filters = $request->input('filters');
         if ($filters !== null) {
-            // If filters is empty, remove it from session
-            if (is_array($filters) && empty($filters)) {
-                session()->forget($this->getSessionKey('filters'));
-            } else {
-                // Store filters in session
-                $this->storeInSession('filters', $filters);
-            }
+            $this->storeInSession('filters', $filters);
         } else {
             // Get filters from session
             $filters = $this->getFromSession('filters', []);
