@@ -672,6 +672,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                 options={options}
                                 selectedValues={selectedFilterValues[filter.name] || new Set()}
                                 onFilterChange={(values) => handleFilterChange(filter.name, values)}
+                                multiple={filter.multiple}
                             />
                         );
                     })}
@@ -710,6 +711,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                 options={options}
                                 selectedValues={selectedFilterValues[filter.name] || new Set()}
                                 onFilterChange={(values) => handleFilterChange(filter.name, values)}
+                                multiple={filter.multiple}
                             />
                         );
                     })}

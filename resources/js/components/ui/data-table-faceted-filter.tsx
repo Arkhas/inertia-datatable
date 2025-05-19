@@ -3,6 +3,7 @@ import { PlusCircle } from "lucide-react"
 
 import { cn } from "../../lib/utils"
 import { Checkbox } from "./checkbox"
+import { RadioGroup, RadioGroupItem } from "./radio-group"
 import { useTranslation } from "../../lib/useTranslation"
 import { Badge } from "./badge"
 import { Button } from "./button"
@@ -32,6 +33,7 @@ interface DataTableFacetedFilterProps {
   }[]
   selectedValues: Set<string>
   onFilterChange: (values: string[]) => void
+  multiple?: boolean
 }
 
 export function DataTableFacetedFilter({
@@ -39,6 +41,7 @@ export function DataTableFacetedFilter({
   options,
   selectedValues,
   onFilterChange,
+  multiple = true,
 }: DataTableFacetedFilterProps) {
   const { t } = useTranslation();
 
@@ -89,39 +92,79 @@ export function DataTableFacetedFilter({
           <CommandList>
             <CommandEmpty>{t('no_results_found')}</CommandEmpty>
             <CommandGroup>
-              {options.map((option) => {
-                const isSelected = selectedValues.has(option.value)
-                return (
-                  <CommandItem
-                    key={option.value}
-                    onSelect={() => {}}
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      className="mr-2 text-white"
-                      onCheckedChange={() => {
-                        const newSelectedValues = new Set(selectedValues);
-                        if (isSelected) {
-                          newSelectedValues.delete(option.value);
-                        } else {
-                          newSelectedValues.add(option.value);
-                        }
-                        const filterValues = Array.from(newSelectedValues);
-                        onFilterChange(filterValues);
-                      }}
-                    />
-                    {option.icon && (
-                      <option.icon className="mr-2 h-4 w-4" />
-                    )}
-                    <span>{option.label}</span>
-                    {option.count !== undefined && (
-                      <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
-                        {option.count}
-                      </span>
-                    )}
-                  </CommandItem>
-                )
-              })}
+              {multiple ? (
+                // Render checkboxes for multiple selection
+                options.map((option) => {
+                  const isSelected = selectedValues.has(option.value)
+                  return (
+                    <CommandItem
+                      key={option.value}
+                      onSelect={() => {}}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        className="mr-2 text-white"
+                        onCheckedChange={() => {
+                          const newSelectedValues = new Set(selectedValues);
+                          if (isSelected) {
+                            newSelectedValues.delete(option.value);
+                          } else {
+                            newSelectedValues.add(option.value);
+                          }
+                          const filterValues = Array.from(newSelectedValues);
+                          onFilterChange(filterValues);
+                        }}
+                      />
+                      {option.icon && (
+                        <option.icon className="mr-2 h-4 w-4" />
+                      )}
+                      <span>{option.label}</span>
+                      {option.count !== undefined && (
+                        <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
+                          {option.count}
+                        </span>
+                      )}
+                    </CommandItem>
+                  )
+                })
+              ) : (
+                // Render radio buttons for single selection
+                <RadioGroup
+                  value={selectedValues.size > 0 ? Array.from(selectedValues)[0] : undefined}
+                  onValueChange={(value) => {
+                    onFilterChange([value]);
+                  }}
+                >
+                  {options.map((option) => {
+                    const isSelected = selectedValues.has(option.value)
+                    return (
+                      <CommandItem
+                        key={option.value}
+                        onSelect={() => {
+                          const newValue = option.value;
+                          onFilterChange([newValue]);
+                        }}
+                      >
+                        <div className="flex items-center">
+                          <RadioGroupItem
+                            value={option.value}
+                            className="mr-2 text-white"
+                          />
+                          {option.icon && (
+                            <option.icon className="mr-2 h-4 w-4" />
+                          )}
+                          <span>{option.label}</span>
+                          {option.count !== undefined && (
+                            <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
+                              {option.count}
+                            </span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    )
+                  })}
+                </RadioGroup>
+              )}
             </CommandGroup>
             {selectedValues.size > 0 && (
               <>
