@@ -6,10 +6,16 @@ namespace Arkhas\InertiaDatatable;
 
 use Arkhas\InertiaDatatable\Actions\TableActionGroup;
 use Arkhas\InertiaDatatable\Actions\TableAction;
+use Arkhas\InertiaDatatable\Columns\ActionColumn;
 use Arkhas\InertiaDatatable\Columns\CheckboxColumn;
+use Arkhas\InertiaDatatable\Columns\ColumnActionGroup;
+use Error;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Inertia\Response;
 
 abstract class InertiaDatatable
 {
@@ -88,7 +94,7 @@ abstract class InertiaDatatable
     {
         $currentFilterValues = [];
         foreach ($filters as $filterName => $filterValue) {
-            if (is_string($filterValue) && strpos($filterValue, ',') !== false) {
+            if (is_string($filterValue) && str_contains($filterValue, ',')) {
                 $currentFilterValues[$filterName] = explode(',', $filterValue);
             } else {
                 $currentFilterValues[$filterName] = $filterValue;
@@ -98,10 +104,10 @@ abstract class InertiaDatatable
         return $currentFilterValues;
     }
 
-    public function render(string $component): \Illuminate\Http\JsonResponse|\Inertia\Response
+    public function render(string $component): JsonResponse|Response
     {
         if (!isset($this->table)) {
-            throw new \Error('No table set for datatable');
+            throw new Error('No table set for datatable');
         }
 
         return Inertia::render($component, $this->getProps());
@@ -254,7 +260,7 @@ abstract class InertiaDatatable
             }
 
             // Add type and action for action columns
-            if ($column instanceof \Arkhas\InertiaDatatable\Columns\ActionColumn) {
+            if ($column instanceof ActionColumn) {
                 $columnData['type'] = 'action';
                 $columnData['action'] = $column->getAction();
             }
@@ -295,7 +301,7 @@ abstract class InertiaDatatable
     public function getResults(): Builder
     {
         if (!isset($this->table)) {
-            throw new \Error('No table set for datatable');
+            throw new Error('No table set for datatable');
         }
         $request           = $this->getRequest();
         $columns           = $this->table->getColumns();
@@ -415,7 +421,7 @@ abstract class InertiaDatatable
         return $query;
     }
 
-    public function getData(): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    public function getData(): LengthAwarePaginator
     {
         $results  = $this->getResults();
         $request  = $this->getRequest();
@@ -458,7 +464,7 @@ abstract class InertiaDatatable
                 }
 
                 // Handle checkbox columns
-                if ($column instanceof \Arkhas\InertiaDatatable\Columns\CheckboxColumn) {
+                if ($column instanceof CheckboxColumn) {
                     $value = $column->getValue($model);
                     $result["{$columnName}_value"] = $value;
                     $result["{$columnName}_checked"] = $column->isChecked($model);
@@ -469,10 +475,10 @@ abstract class InertiaDatatable
                 }
 
                 // Handle action columns
-                if ($column instanceof \Arkhas\InertiaDatatable\Columns\ActionColumn) {
+                if ($column instanceof ActionColumn) {
                     $action = $column->getAction();
                     // Convert ColumnActionGroup to array if needed
-                    if ($action instanceof \Arkhas\InertiaDatatable\Columns\ColumnActionGroup) {
+                    if ($action instanceof ColumnActionGroup) {
                         $result["{$columnName}_action"] = $action->toArrayWithModel($model);
                     } else {
                         $result["{$columnName}_action"] = $action;
