@@ -59,10 +59,10 @@ export function DataTableViewOptions({
         <Button
           variant="outline"
           size="sm"
-          className="ml-auto hidden h-8 lg:flex"
+          className="ml-auto h-8 lg:flex"
         >
-          <Settings2 className="mr-2 h-4 w-4 text-current" />
-          {t('columns')}
+          <Settings2 className="h-4 w-4 text-current" />
+          <span className={"ml-2 md:block hidden"}>{t('columns')}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

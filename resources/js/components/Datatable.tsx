@@ -710,7 +710,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                                             return Icon ? <Icon className="h-4 w-4 mr-2" /> : null;
                                                         })()
                                                     )}
-                                                    {action.label}
+                                                    <span className={action.icon ? 'md:block hidden' : ''}>{action.label}</span>
                                                     {action.icon && action.iconPosition === 'right' && (
                                                         (() => {
                                                             const Icon = getIconComponent(action.icon);
@@ -733,7 +733,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                                                 return Icon ? <Icon className="h-4 w-4 mr-2" /> : null;
                                                             })()
                                                         )}
-                                                        {subAction.label}
+                                                        <span>{subAction.label}</span>
                                                         {subAction.icon && subAction.iconPosition === 'right' && (
                                                             (() => {
                                                                 const Icon = getIconComponent(subAction.icon);
@@ -763,7 +763,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                                     return Icon ? <Icon className="h-4 w-4 mr-2" /> : null;
                                                 })()
                                             )}
-                                            {action.label}
+                                            <span className={action.icon ? 'md:block hidden' : ''}>{action.label}</span>
                                             {action.icon && action.iconPosition === 'right' && (
                                                 (() => {
                                                     const Icon = getIconComponent(action.icon);
