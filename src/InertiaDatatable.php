@@ -25,6 +25,17 @@ abstract class InertiaDatatable
         $this->setup();
     }
 
+    /**
+     * Get a unique session key for this datatable
+     */
+    protected function getSessionKey(string $suffix = ''): string
+    {
+        $className = get_class($this);
+        $baseKey = 'datatable_' . md5($className);
+
+        return $suffix ? $baseKey . '_' . $suffix : $baseKey;
+    }
+
     public abstract function setup(): void;
 
     public function table(EloquentTable $table): self
@@ -96,9 +107,69 @@ abstract class InertiaDatatable
         return Inertia::render($component, $this->getProps());
     }
 
+    /**
+     * Store a value in the session for this datatable
+     */
+    protected function storeInSession(string $key, $value): void
+    {
+        session()->put($this->getSessionKey($key), $value);
+    }
+
+    /**
+     * Get a value from the session for this datatable
+     */
+    protected function getFromSession(string $key, $default = null)
+    {
+        return session()->get($this->getSessionKey($key), $default);
+    }
+
     public function getProps(): array
     {
         $request = $this->getRequest();
+
+        // Get values from request or session
+        $pageSize = $request->input('pageSize');
+        $sort = $request->input('sort');
+        $direction = $request->input('direction');
+        $filters = $request->input('filters');
+        $visibleColumns = $request->input('visibleColumns');
+
+        // If values are in the request, store them in session
+        if ($pageSize !== null) {
+            $this->storeInSession('pageSize', $pageSize);
+        } else {
+            // Get from session or use default
+            $pageSize = $this->getFromSession('pageSize', $this->defaultPageSize);
+        }
+
+        if ($sort !== null) {
+            $this->storeInSession('sort', $sort);
+            $this->storeInSession('direction', $direction ?? 'asc');
+        } else {
+            // Get from session
+            $sort = $this->getFromSession('sort');
+            $direction = $this->getFromSession('direction', 'asc');
+        }
+
+        if ($filters !== null) {
+            // If filters is empty, remove it from session
+            if (is_array($filters) && empty($filters)) {
+                session()->forget($this->getSessionKey('filters'));
+            } else {
+                // Store filters in session
+                $this->storeInSession('filters', $filters);
+            }
+        } else {
+            // Get from session or use empty array
+            $filters = $this->getFromSession('filters', []);
+        }
+
+        if ($visibleColumns !== null) {
+            $this->storeInSession('visibleColumns', $visibleColumns);
+        } else {
+            // Get from session
+            $visibleColumns = $this->getFromSession('visibleColumns');
+        }
 
         $props = [
             'actionResult'       =>  $this->handleAction(),
@@ -106,14 +177,14 @@ abstract class InertiaDatatable
             'filters'            => fn() => $this->getFilters(),
             'actions'            => fn() => $this->getActions(),
             'data'               => fn() => $this->getData(),
-            'pageSize'           => fn() => $request->input('pageSize', $this->defaultPageSize),
+            'pageSize'           => fn() => $pageSize,
             'availablePageSizes' => fn() => $this->availablePageSizes,
-            'sort'               => fn() => $request->input('sort'),
-            'direction'          => fn() => $request->input('direction', 'asc'),
-            'currentFilters'     => fn() => $this->getCurrentFilterValues($request->input('filters', [])),
+            'sort'               => fn() => $sort,
+            'direction'          => fn() => $direction,
+            'currentFilters'     => fn() => $this->getCurrentFilterValues($filters),
             'translations'       => fn() => $this->getTranslations(),
+            'visibleColumns'     => fn() => $visibleColumns,
         ];
-
 
         return $props;
     }
@@ -234,6 +305,20 @@ abstract class InertiaDatatable
         // Handle search if needed
         if ($request->has('search')) {
             $searchTerm = $request->input('search');
+            // If search term is empty, remove it from session
+            if ($searchTerm === '') {
+                session()->forget($this->getSessionKey('search'));
+                $searchTerm = null;
+            } else {
+                // Store search term in session
+                $this->storeInSession('search', $searchTerm);
+            }
+        } else {
+            // Get search term from session
+            $searchTerm = $this->getFromSession('search');
+        }
+
+        if ($searchTerm) {
             $query->where(function ($q) use ($searchTerm, $columns) {
                 foreach ($columns as $column) {
                     // Only include searchable columns
@@ -256,7 +341,21 @@ abstract class InertiaDatatable
             });
         }
 
-        $filters = $request->input('filters', []);
+        // Get filters from request or session
+        $filters = $request->input('filters');
+        if ($filters !== null) {
+            // If filters is empty, remove it from session
+            if (is_array($filters) && empty($filters)) {
+                session()->forget($this->getSessionKey('filters'));
+            } else {
+                // Store filters in session
+                $this->storeInSession('filters', $filters);
+            }
+        } else {
+            // Get filters from session
+            $filters = $this->getFromSession('filters', []);
+        }
+
         if (!empty($filters)) {
             foreach ($filters as $filterName => $filterValue) {
                 foreach ($filterDefinitions as $filter) {
@@ -266,6 +365,7 @@ abstract class InertiaDatatable
                 }
             }
         }
+
         // Always apply direct column filters (for test expectations)
         foreach ($request->all() as $key => $value) {
             foreach ($columns as $column) {
@@ -274,15 +374,39 @@ abstract class InertiaDatatable
                 }
             }
         }
-        if ($sort = $request->input('sort')) {
+
+        // Get sort from request or session
+        $sort = $request->input('sort');
+        if ($sort !== null) {
             $direction = $request->input('direction', 'asc');
+            // Store sort and direction in session
+            $this->storeInSession('sort', $sort);
+            $this->storeInSession('direction', $direction);
+        } else {
+            // Get sort and direction from session
+            $sort = $this->getFromSession('sort');
+            $direction = $this->getFromSession('direction', 'asc');
+        }
+
+        if ($sort) {
             foreach ($columns as $column) {
                 if ($column->getName() === $sort) {
                     $column->applyOrder($query, $direction);
                 }
             }
         }
-        $pageSize = (int)$request->input('pageSize', $this->defaultPageSize);
+
+        // Get page size from request or session
+        $pageSize = $request->input('pageSize');
+        if ($pageSize !== null) {
+            // Store page size in session
+            $this->storeInSession('pageSize', $pageSize);
+        } else {
+            // Get page size from session or use default
+            $pageSize = $this->getFromSession('pageSize', $this->defaultPageSize);
+        }
+
+        $pageSize = (int)$pageSize;
         if ($pageSize < 1) {
             $pageSize = 1;
         }
@@ -296,7 +420,18 @@ abstract class InertiaDatatable
         $results  = $this->getResults();
         $request  = $this->getRequest();
         $columns  = $this->table->getColumns();
-        $pageSize = max(1, (int)$request->input('pageSize', $this->defaultPageSize));
+
+        // Get page size from request or session
+        $pageSize = $request->input('pageSize');
+        if ($pageSize !== null) {
+            // Store page size in session
+            $this->storeInSession('pageSize', $pageSize);
+        } else {
+            // Get page size from session or use default
+            $pageSize = $this->getFromSession('pageSize', $this->defaultPageSize);
+        }
+
+        $pageSize = max(1, (int)$pageSize);
 
         $data = $results->paginate($pageSize);
 

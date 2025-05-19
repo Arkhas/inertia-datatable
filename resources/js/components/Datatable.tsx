@@ -94,6 +94,7 @@ interface PageProps {
         title?: string;
         variant?: string;
     };
+    visibleColumns?: Record<string, boolean>;
 }
 
 // Define types for icon components
@@ -107,7 +108,8 @@ interface DatatableProps {
 
 const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) => {
     // Get data from Inertia page props
-    const { columns, filters, actions, currentFilters, data, pageSize, availablePageSizes, sort, direction, translations, actionResult } = usePage().props as PageProps;
+    const page = usePage();
+    const { columns, filters, actions, currentFilters, data, pageSize, availablePageSizes, sort, direction, translations, actionResult, visibleColumns: propsVisibleColumns } = page.props as PageProps;
     // Get translation function
     const { t } = useTranslation();
     // Track if an action was explicitly triggered
@@ -189,13 +191,19 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
     // Initialize visible columns on the first render
     useEffect(() => {
         if (columns) {
-            const initialVisibleColumns: Record<string, boolean> = {};
-            columns.forEach(column => {
-                initialVisibleColumns[column.name] = true;
-            });
-            setVisibleColumns(initialVisibleColumns);
+            // If visibleColumns is provided in props, use it
+            if (propsVisibleColumns) {
+                setVisibleColumns(propsVisibleColumns as Record<string, boolean>);
+            } else {
+                // Otherwise, initialize all columns as visible
+                const initialVisibleColumns: Record<string, boolean> = {};
+                columns.forEach(column => {
+                    initialVisibleColumns[column.name] = true;
+                });
+                setVisibleColumns(initialVisibleColumns);
+            }
         }
-    }, [columns]);
+    }, [columns, propsVisibleColumns]);
 
     // Initialize filter values from currentFilters
     useEffect(() => {
@@ -316,7 +324,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
         }
 
         // Add search parameter if provided
-        if (params.search && typeof params.search === 'string') {
+        if (params.search !== undefined && typeof params.search === 'string') {
             queryParams.search = params.search;
         }
 
@@ -332,10 +340,22 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
 
             // Only toggle visibility if the column is toggable
             if (column && (column.toggable !== false)) {
-                setVisibleColumns(prev => ({
-                    ...prev,
+                // Update local state
+                const updatedVisibleColumns = {
+                    ...visibleColumns,
                     [params.columnKey as string]: params.isVisible as boolean
-                }));
+                };
+                setVisibleColumns(updatedVisibleColumns);
+
+                // Send to server to store in session
+                const url = route(routeName, {});
+                router.post(url, {
+                    visibleColumns: updatedVisibleColumns
+                }, {
+                    preserveState: true,
+                    preserveScroll: true,
+                    only: ['visibleColumns']
+                });
             }
         }
 
@@ -352,7 +372,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
-                only: ['data', 'currentFilters', 'sort', 'direction', 'pageSize'],
+                only: ['data', 'currentFilters', 'sort', 'direction', 'pageSize', 'visibleColumns'],
                 onSuccess: () => {
                     // After data is loaded, update selectedRows to only include IDs that still exist in the new data
                     const checkboxColumn = columns.find(col => col.type === 'checkbox');
@@ -423,7 +443,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
 
     const handleResetFilters = () => {
         setSelectedFilterValues({});
-        handleDatatableAction('resetFilters');
+        handleDatatableAction('filter', { filters: {} });
     };
 
     const handleSelectRow = (rowId: number | string) => {
@@ -521,7 +541,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
             }, {
                 preserveState: true,
                 preserveScroll: true,
-                only: ['data', 'actionResult'],
+                only: ['data', 'actionResult', 'visibleColumns'],
                 onSuccess: () => {
                     // After data is loaded, update selectedRows to only include IDs that still exist in the new data
                     const checkboxColumn = columns.find(col => col.type === 'checkbox');
@@ -586,7 +606,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
             }, {
                 preserveState: true,
                 preserveScroll: true,
-                only: ['data', 'actionResult'],
+                only: ['data', 'actionResult', 'visibleColumns'],
                 onSuccess: () => {
                     // After data is loaded, update selectedRows to only include IDs that still exist in the new data
                     const checkboxColumn = columns.find(col => col.type === 'checkbox');
