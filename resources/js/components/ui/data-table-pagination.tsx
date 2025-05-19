@@ -48,7 +48,7 @@ export function DataTablePagination({
       </div>
       <div className="flex items-center space-x-6 lg:space-x-8">
         <div className="flex items-center space-x-2">
-          <p className="text-sm font-medium">{t('rows_per_page')}</p>
+          <p className="text-sm font-medium hidden lg:block">{t('rows_per_page')}</p>
           <Select
             value={`${pageSize}`}
             onValueChange={(value) => {

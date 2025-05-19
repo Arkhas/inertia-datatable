@@ -651,8 +651,50 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
 
     return (
         <div className="w-full space-y-4">
+            {/* Mobile: search bar above controls */}
+            <div className="block lg:hidden mb-2">
+                <Input
+                    placeholder={t('search_placeholder')}
+                    className="h-8 w-full"
+                    onChange={(e) => handleDatatableAction('search', { search: e.target.value })}
+                />
+            </div>
+            {/* Mobile: filters and reset button below search bar */}
+            <div className="flex flex-row gap-2 mb-2 lg:hidden">
+                <div className="flex flex-wrap gap-2 flex-1">
+                    {filters?.map(filter => {
+                        const options = getFilterOptions(filter.name);
+                        if (options.length === 0) return null;
+                        return (
+                            <DataTableFacetedFilter
+                                key={filter.name}
+                                title={filter.label}
+                                options={options}
+                                selectedValues={selectedFilterValues[filter.name] || new Set()}
+                                onFilterChange={(values) => handleFilterChange(filter.name, values)}
+                            />
+                        );
+                    })}
+                </div>
+                {Object.values(selectedFilterValues).some(set => set.size > 0) && (
+                    <div className="flex items-center justify-end flex-shrink-0 w-auto">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={handleResetFilters}
+                        >
+                            {(() => {
+                                const XIcon = getIconComponent('X');
+                                return XIcon ? <XIcon className="h-4 w-4" /> : null;
+                            })()}
+                        </Button>
+                    </div>
+                )}
+            </div>
             <div className="flex items-center justify-between">
-                <div className="flex flex-1 items-center space-x-2">
+                {/* Desktop: search bar inline with controls */}
+                <div className="hidden lg:flex flex-1 items-center space-x-2">
                     <Input
                         placeholder={t('search_placeholder')}
                         className="h-8 w-[150px] lg:w-[250px]"
@@ -661,7 +703,6 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                     {filters?.map(filter => {
                         const options = getFilterOptions(filter.name);
                         if (options.length === 0) return null;
-
                         return (
                             <DataTableFacetedFilter
                                 key={filter.name}
