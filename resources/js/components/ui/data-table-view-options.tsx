@@ -62,7 +62,7 @@ export function DataTableViewOptions({
           className="ml-auto h-8 lg:flex"
         >
           <Settings2 className="h-4 w-4 text-current" />
-          <span className={"ml-2 md:block hidden"}>{t('columns')}</span>
+          <span className={"ml-2 lg:block hidden"}>{t('columns')}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

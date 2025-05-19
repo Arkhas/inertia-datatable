@@ -676,10 +676,10 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 px-2 lg:px-3"
+                            className="h-8 px-2 lg:px-3 mr-2"
                             onClick={handleResetFilters}
                         >
-                            {t('reset')}
+                            <span className={"lg:block hidden"}>{t('reset')}</span>
                             {(() => {
                                 const XIcon = getIconComponent('X');
                                 return XIcon ? <XIcon className="h-4 w-4" /> : null;
@@ -710,7 +710,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                                             return Icon ? <Icon className="h-4 w-4 mr-2" /> : null;
                                                         })()
                                                     )}
-                                                    <span className={action.icon ? 'md:block hidden' : ''}>{action.label}</span>
+                                                    <span className={action.icon ? 'lg:block hidden' : ''}>{action.label}</span>
                                                     {action.icon && action.iconPosition === 'right' && (
                                                         (() => {
                                                             const Icon = getIconComponent(action.icon);
@@ -763,7 +763,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                                                     return Icon ? <Icon className="h-4 w-4 mr-2" /> : null;
                                                 })()
                                             )}
-                                            <span className={action.icon ? 'md:block hidden' : ''}>{action.label}</span>
+                                            <span className={action.icon ? 'lg:block hidden' : ''}>{action.label}</span>
                                             {action.icon && action.iconPosition === 'right' && (
                                                 (() => {
                                                     const Icon = getIconComponent(action.icon);
