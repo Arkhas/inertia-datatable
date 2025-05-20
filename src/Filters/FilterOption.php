@@ -12,6 +12,7 @@ class FilterOption
     protected ?string $label = null;
     protected ?string $icon = null;
     protected $queryCallback = null;
+    protected ?int $count = null;
 
     public static function make(string $value): self
     {
@@ -71,6 +72,18 @@ class FilterOption
         return $this->queryCallback;
     }
 
+    public function count(int $count): self
+    {
+        $this->count = $count;
+
+        return $this;
+    }
+
+    public function getCount(): ?int
+    {
+        return $this->count;
+    }
+
     public function applyQuery(Builder $query, $keyword): void
     {
         if ($this->queryCallback) {
@@ -82,5 +95,24 @@ class FilterOption
                 $query->where($this->value, 'like', "%{$keyword}%");
             });
         }
+    }
+
+    public function toArray(): array
+    {
+        $data = [
+            'value' => $this->getValue(),
+            'label' => $this->getLabel(),
+        ];
+
+        if ($this->icon !== null) {
+            $data['icon'] = $this->getIcon();
+            $data['iconPosition'] = $this->getIconPosition();
+        }
+
+        if ($this->count !== null) {
+            $data['count'] = $this->getCount();
+        }
+
+        return $data;
     }
 }

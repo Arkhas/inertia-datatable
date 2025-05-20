@@ -10,17 +10,17 @@ class Filter
 {
     protected string $name;
     protected string $label;
-    protected array $options = [];
-    protected array $filterOptions = [];
-    protected array $icons = [];
-    protected array $iconPositions = [];
-    protected bool $multiple = false;
-    protected $queryCallback = null;
+    protected array  $options       = [];
+    protected array  $filterOptions = [];
+    protected array  $icons         = [];
+    protected array  $iconPositions = [];
+    protected bool   $multiple      = false;
+    protected        $queryCallback = null;
 
     public static function make(string $name): self
     {
-        $instance = new self();
-        $instance->name = $name;
+        $instance        = new self();
+        $instance->name  = $name;
         $instance->label = ucfirst($name);
 
         return $instance;
@@ -53,14 +53,14 @@ class Filter
             $this->filterOptions = $options;
 
             // Also update the options array for backward compatibility
-            $this->options = [];
-            $this->icons = [];
+            $this->options       = [];
+            $this->icons         = [];
             $this->iconPositions = [];
 
             foreach ($options as $option) {
                 $this->options[$option->getValue()] = $option->getLabel();
                 if ($option->getIcon()) {
-                    $this->icons[$option->getValue()] = $option->getIcon();
+                    $this->icons[$option->getValue()]         = $option->getIcon();
                     $this->iconPositions[$option->getValue()] = $option->getIconPosition();
                 }
             }
@@ -171,15 +171,24 @@ class Filter
         return $this->iconPositions;
     }
 
+
     public function toArray(): array
     {
-        return [
-            'name'     => $this->getName(),
-            'label'    => $this->getLabel(),
-            'options'  => $this->getOptions(),
-            'icons'    => $this->getIcons(),
+        $data = [
+            'name'          => $this->getName(),
+            'label'         => $this->getLabel(),
+            'options'       => $this->getOptions(),
+            'icons'         => $this->getIcons(),
             'iconPositions' => $this->getIconPositions(),
-            'multiple' => $this->isMultiple()
+            'multiple'      => $this->isMultiple()
         ];
+
+        if (!empty($this->filterOptions)) {
+            $data['filterOptions'] = array_map(function ($option) {
+                return $option->toArray();
+            }, $this->filterOptions);
+        }
+
+        return $data;
     }
 }

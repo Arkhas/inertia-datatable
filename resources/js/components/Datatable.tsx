@@ -69,6 +69,13 @@ interface FilterDefinition {
     options: Record<string, string>;
     icons?: Record<string, string>;
     multiple: boolean;
+    filterOptions?: Array<{
+        value: string;
+        label: string;
+        icon?: string;
+        iconPosition?: string;
+        count?: number;
+    }>;
 }
 
 interface PageProps {
@@ -404,17 +411,17 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
     // Map filter options to the format expected by DataTableFacetedFilter
     const getFilterOptions = (filterName: string) => {
         const filter = filters?.find(f => f.name === filterName);
-        if (!filter) return [];
+        if (!filter || !filter.filterOptions || !Array.isArray(filter.filterOptions)) return [];
 
-        return Object.entries(filter.options).map(([value, label]) => {
-            // Get icon from filter.icons if available
-            const iconName = filter.icons?.[value];
-            const icon = iconName ? getIconComponent(iconName) : undefined;
 
+        return filter.filterOptions.map(option => {
+            const icon = option.icon ? getIconComponent(option.icon) : undefined;
+            console.log('Option', option.value, 'count:', option.count);
             return {
-                label,
-                value,
-                icon
+                label: option.label,
+                value: option.value,
+                icon,
+                count: option.count
             };
         });
     };
