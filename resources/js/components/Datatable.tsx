@@ -416,7 +416,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
 
         return filter.filterOptions.map(option => {
             const icon = option.icon ? getIconComponent(option.icon) : undefined;
-            console.log('Option', option.value, 'count:', option.count);
+
             return {
                 label: option.label,
                 value: option.value,
@@ -519,7 +519,6 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
 
     // Handle row actions
     const handleRowAction = (action: string, taskId: number, url?: string): void => {
-        console.log(`Action ${action} on task ${taskId}`);
 
         // If a URL is provided, navigate to it
         if (url) {
@@ -535,7 +534,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
 
         try {
             const actionUrl = route(routeName);
-            console.log(`Sending action ${action} for ID:`, taskId);
+
             // Set actionTriggered to true to indicate that an action was explicitly triggered
             setActionTriggered(true);
 
@@ -600,7 +599,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
 
         try {
             const url = route(routeName);
-            console.log(`Sending action ${actionName} with IDs:`, selectedIds);
+
             // Set actionTriggered to true to indicate that an action was explicitly triggered
             setActionTriggered(true);
 
