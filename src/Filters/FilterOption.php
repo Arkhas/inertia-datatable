@@ -7,6 +7,7 @@ namespace Arkhas\InertiaDatatable\Filters;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 
+
 class FilterOption
 {
     protected string $value;
@@ -86,7 +87,7 @@ class FilterOption
             return call_user_func($this->count);
         }
 
-        return $this->count;
+        return null;
     }
 
     public function applyQuery(Builder $query, $keyword): void
@@ -104,20 +105,12 @@ class FilterOption
 
     public function toArray(): array
     {
-        $data = [
+        return [
             'value' => $this->getValue(),
             'label' => $this->getLabel(),
+            'count' => $this->getCount(),
+            'icon' =>  $this->getIcon(),
+            'iconPosition'  => $this->getIconPosition(),
         ];
-
-        if ($this->icon !== null) {
-            $data['icon'] = $this->getIcon();
-            $data['iconPosition'] = $this->getIconPosition();
-        }
-
-        if ($this->count !== null) {
-            $data['count'] = $this->getCount();
-        }
-
-        return $data;
     }
 }
