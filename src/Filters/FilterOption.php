@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Arkhas\InertiaDatatable\Filters;
 
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 
 class FilterOption
@@ -12,7 +13,7 @@ class FilterOption
     protected ?string $label = null;
     protected ?string $icon = null;
     protected $queryCallback = null;
-    protected $count = null;
+    protected ?Closure $count = null;
 
     public static function make(string $value): self
     {

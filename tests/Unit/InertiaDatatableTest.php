@@ -5,7 +5,7 @@ use Arkhas\InertiaDatatable\Columns\ActionColumn;
 use Arkhas\InertiaDatatable\Columns\ColumnAction;
 use Arkhas\InertiaDatatable\Columns\ColumnActionGroup;
 use Arkhas\InertiaDatatable\Filters\Filter;
-use Illuminate\Console\View\Components\Task;
+use Arkhas\InertiaDatatable\Filters\FilterOption;
 use Tests\TestCase;
 use Tests\TestModels\TestModelDataTable;
 use Tests\TestModels\WithTestModels;
@@ -344,6 +344,31 @@ class InertiaDatatableTest extends TestCase
         $this->assertEquals('status', $filters[0]['name']);
         $this->assertEquals(['icon1', 'icon2'], $filters[0]['icons']);
         $this->assertTrue($filters[0]['multiple']);
+    }
+
+    public function test_get_filters_with_filter_options_and_count()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create filter options with count
+        $opt1 = FilterOption::make('active')->label('Active')->count(function() { return 5; });
+        $opt2 = FilterOption::make('inactive')->label('Inactive')->count(function() { return 3; });
+
+        $filter = Filter::make('status', 'Status')
+                        ->options([$opt1, $opt2]);
+
+        $table = EloquentTable::make(TestModel::query())->filters([$filter]);
+        $datatable->table($table);
+
+        $filters = $datatable->getFilters();
+
+        // Check that filterOptions are included in the output
+        $this->assertArrayHasKey('filterOptions', $filters[0]);
+        $this->assertCount(2, $filters[0]['filterOptions']);
+
+        // Check that count is included in each filter option
+        $this->assertEquals(5, $filters[0]['filterOptions'][0]['count']);
+        $this->assertEquals(3, $filters[0]['filterOptions'][1]['count']);
     }
 
     public function test_get_request_returns_app_instance_if_not_set()

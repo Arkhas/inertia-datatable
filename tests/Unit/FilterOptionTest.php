@@ -82,4 +82,16 @@ class FilterOptionTest extends TestCase
         });
         $opt->applyQuery($query, null);
     }
+
+    public function test_count_and_get_count()
+    {
+        // Test with a direct count value
+        $opt = FilterOption::make('foo')->count(function() { return 42; });
+        $this->assertEquals(42, $opt->getCount());
+
+        // Test that count is included in toArray
+        $array = $opt->toArray();
+        $this->assertArrayHasKey('count', $array);
+        $this->assertEquals(42, $array['count']);
+    }
 }

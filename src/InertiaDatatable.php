@@ -281,7 +281,8 @@ abstract class InertiaDatatable
                 'options'  => $filter->getOptions(),
                 'icons'    => $filter->getIcons(),
                 'iconPositions' => $filter->getIconPositions(),
-                'multiple' => $filter->isMultiple()
+                'multiple' => $filter->isMultiple(),
+                'filterOptions' => method_exists($filter, 'getFilterOptions') ? $filter->getFilterOptions() : []
             ];
         }
 
