@@ -12,7 +12,7 @@ class FilterOption
     protected ?string $label = null;
     protected ?string $icon = null;
     protected $queryCallback = null;
-    protected ?int $count = null;
+    protected $count = null;
 
     public static function make(string $value): self
     {
@@ -72,15 +72,19 @@ class FilterOption
         return $this->queryCallback;
     }
 
-    public function count(int $count): self
+    public function count(callable $callback): self
     {
-        $this->count = $count;
+        $this->count = $callback;
 
         return $this;
     }
 
     public function getCount(): ?int
     {
+        if (is_callable($this->count)) {
+            return call_user_func($this->count);
+        }
+
         return $this->count;
     }
 
