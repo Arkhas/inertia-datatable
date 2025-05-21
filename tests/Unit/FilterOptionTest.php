@@ -59,7 +59,6 @@ class FilterOptionTest extends TestCase
             $query->where('name', $keyword);
         });
 
-        // Create a real query builder
         $query = TestModel::query();
 
         // Apply the filter
@@ -75,7 +74,6 @@ class FilterOptionTest extends TestCase
     {
         $opt = FilterOption::make('name');
 
-        // Create a real query builder
         $query = TestModel::query();
 
         // Apply the filter
@@ -91,7 +89,6 @@ class FilterOptionTest extends TestCase
     {
         $opt = FilterOption::make('name');
 
-        // Create a real query builder
         $query = TestModel::query();
 
         // Apply the filter
@@ -107,7 +104,6 @@ class FilterOptionTest extends TestCase
     {
         $opt = FilterOption::make('name');
 
-        // Create a real query builder
         $query = TestModel::query();
 
         // Apply the filter
