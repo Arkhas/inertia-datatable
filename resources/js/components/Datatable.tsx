@@ -22,6 +22,16 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "./ui/alert-dialog";
 // Import icons from the consuming application
 // These should be provided by the consuming application
 // We'll use React.ComponentType for the icon types
@@ -50,6 +60,7 @@ interface TableAction {
     styles?: string;
     icon?: string;
     props?: Record<string, any>;
+    hasConfirmCallback?: boolean;
 }
 
 interface TableActionGroup {
@@ -134,6 +145,27 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
     const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({});
     const [selectedRows, setSelectedRows] = useState<(number | string)[]>([]);
     const [selectedFilterValues, setSelectedFilterValues] = useState<Record<string, Set<string>>>({});
+
+    // State for confirmation dialog
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+    const [confirmDialogContent, setConfirmDialogContent] = useState<{
+        title: string;
+        message: string;
+        confirm: string;
+        cancel: string;
+        disabled: boolean;
+    }>({
+        title: '',
+        message: '',
+        confirm: '',
+        cancel: '',
+        disabled: false
+    });
+    const [pendingAction, setPendingAction] = useState<{
+        actionName: string;
+        ids: (number | string)[];
+        url?: string;
+    } | null>(null);
 
     // Helper function to check if a row is selected
     const isRowSelected = (rowId: number | string): boolean => {
@@ -517,8 +549,13 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
         }
     };
 
-    // Handle row actions
-    const handleRowAction = (action: string, taskId: number, url?: string): void => {
+    // Execute the pending action
+    const executePendingAction = (): void => {
+        if (!pendingAction) {
+            return;
+        }
+
+        const { actionName, ids, url } = pendingAction;
 
         // If a URL is provided, navigate to it
         if (url) {
@@ -542,8 +579,8 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
             const currentSelectedRows = [...selectedRows];
 
             router.post(actionUrl, {
-                action: action,
-                ids: [taskId]
+                action: actionName,
+                ids: ids
             }, {
                 preserveState: true,
                 preserveScroll: true,
@@ -578,6 +615,61 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
         }
     };
 
+    // Handle row actions
+    const handleRowAction = (action: string, taskId: number, url?: string): void => {
+        // Find the action in the row data
+        const actionData = formattedData.find(row => row._id === taskId)?.[`${action}_action`];
+
+        // Check if the action has a confirmation callback
+        if (actionData && actionData.hasConfirmCallback) {
+            // Set the pending action
+            setPendingAction({
+                actionName: action,
+                ids: [taskId],
+                url
+            });
+
+            // Get the confirmation data from the server
+            try {
+                const actionUrl = route(routeName);
+                router.post(actionUrl, {
+                    action: `${action}_confirm`,
+                    ids: [taskId]
+                }, {
+                    preserveState: true,
+                    preserveScroll: true,
+                    only: ['actionResult'],
+                    onSuccess: (page) => {
+                        const { actionResult } = page.props as any;
+
+                        if (actionResult.confirmData) {
+                            // Set the confirmation dialog content
+                            setConfirmDialogContent({
+                                title: actionResult.confirmData.title || 'Are you sure?',
+                                message: actionResult.confirmData.message || 'This action cannot be undone.',
+                                confirm: actionResult.confirmData.confirm || 'Confirm',
+                                cancel: actionResult.confirmData.cancel || 'Cancel',
+                                disabled: actionResult.confirmData.disabled || false
+                            });
+                            // Open the confirmation dialog
+                            setConfirmDialogOpen(true);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error getting confirmation data:", error);
+            }
+        } else {
+            // If no confirmation is needed, execute the action directly
+            setPendingAction({
+                actionName: action,
+                ids: [taskId],
+                url
+            });
+            executePendingAction();
+        }
+    };
+
     // Handle bulk actions
     const handleBulkAction = (actionName: string): void => {
         if (selectedRows.length === 0) {
@@ -591,55 +683,66 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
         // from either the checkbox column or the row.id
         selectedIds = selectedRows;
 
-        // Send the action to the server
-        if (!routeName) {
-            console.error("Route name is not defined for Datatable component");
-            return;
-        }
+        // Find the action in the actions array
+        const action = actions?.find(a => {
+            if (a.type === 'action') {
+                return a.name === actionName;
+            } else if (a.type === 'group') {
+                return a.actions.some(sa => sa.name === actionName);
+            }
+            return false;
+        });
 
-        try {
-            const url = route(routeName);
+        // Get the specific action if it's in a group
+        const specificAction = action?.type === 'group' 
+            ? action.actions.find(a => a.name === actionName) 
+            : action?.type === 'action' ? action : null;
 
-            // Set actionTriggered to true to indicate that an action was explicitly triggered
-            setActionTriggered(true);
-
-            // Store current selectedRows before making the request
-            const currentSelectedRows = [...selectedRows];
-
-            router.post(url, {
-                action: actionName,
+        // Check if the action has a confirmation callback
+        if (specificAction && specificAction.hasConfirmCallback) {
+            // Set the pending action
+            setPendingAction({
+                actionName,
                 ids: selectedIds
-            }, {
-                preserveState: true,
-                preserveScroll: true,
-                only: ['data', 'actionResult', 'visibleColumns'],
-                onSuccess: () => {
-                    // After data is loaded, update selectedRows to only include IDs that still exist in the new data
-                    const checkboxColumn = columns.find(col => col.type === 'checkbox');
-                    if (checkboxColumn) {
-                        const columnName = checkboxColumn.name;
-                        // Get all valid row IDs from the new data
-                        const validRowIds = formattedData
-                            .map(row => {
-                                const value = row[`${columnName}_value`];
-                                const isDisabled = row[`${columnName}_disabled`];
-                                // Only include rows with valid values that aren't disabled
-                                return (isDisabled || value === undefined || value === null) ? null : value;
-                            })
-                            .filter(id => id !== null);
-
-                        // Filter selectedRows to only include IDs that exist in the new data
-                        const updatedSelectedRows = currentSelectedRows.filter(id => 
-                            validRowIds.includes(id)
-                        );
-
-                        // Update selectedRows state
-                        setSelectedRows(updatedSelectedRows);
-                    }
-                }
             });
-        } catch (error) {
-            console.error("Error sending action to server:", error);
+
+            // Get the confirmation data from the server
+            try {
+                const actionUrl = route(routeName);
+                router.post(actionUrl, {
+                    action: `${actionName}_confirm`,
+                    ids: selectedIds
+                }, {
+                    preserveState: true,
+                    preserveScroll: true,
+                    only: ['actionResult'],
+                    onSuccess: (page) => {
+                        const { actionResult } = page.props as any;
+
+                        if (actionResult.confirmData) {
+                            // Set the confirmation dialog content
+                            setConfirmDialogContent({
+                                title: actionResult.confirmData.title || 'Are you sure?',
+                                message: actionResult.confirmData.message || 'This action cannot be undone.',
+                                confirm: actionResult.confirmData.confirm || 'Confirm',
+                                cancel: actionResult.confirmData.cancel || 'Cancel',
+                                disabled: actionResult.confirmData.disabled || false
+                            });
+                            // Open the confirmation dialog
+                            setConfirmDialogOpen(true);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Error getting confirmation data:", error);
+            }
+        } else {
+            // If no confirmation is needed, execute the action directly
+            setPendingAction({
+                actionName,
+                ids: selectedIds
+            });
+            executePendingAction();
         }
     };
 
@@ -1047,6 +1150,35 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
                 />
             )}
             <Toaster />
+
+            {/* Confirmation Dialog */}
+            <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+                <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{confirmDialogContent.title}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                {confirmDialogContent.message}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => {
+                                setPendingAction(null);
+                                setConfirmDialogOpen(false);
+                            }}>
+                                {confirmDialogContent.cancel}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={() => {
+                                    executePendingAction();
+                                    setConfirmDialogOpen(false);
+                                }}
+                                disabled={confirmDialogContent.disabled}
+                            >
+                                {confirmDialogContent.confirm}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

@@ -70,6 +70,12 @@ abstract class InertiaDatatable
         if ($request->has('action') && $request->has('ids')) {
             $actionName = $request->input('action');
             $ids    = $request->input('ids');
+
+            // Check if this is a confirmation request
+            if (str_ends_with($actionName, '_confirm')) {
+                return $this->handleConfirmation($actionName, $ids);
+            }
+
             foreach ($this->table->getActions() as $action) {
                 if ($action instanceof TableActionGroup) {
                     foreach ($action->getActions() as $groupAction) {
@@ -78,7 +84,6 @@ abstract class InertiaDatatable
                         }
                     }
                 } elseif ($action instanceof TableAction) {
-
                     if ($action->getName() === $actionName) {
                         return $action->execute($ids);
                     }
@@ -86,6 +91,55 @@ abstract class InertiaDatatable
             }
         }
 
+        return null;
+    }
+
+    /**
+     * Handle confirmation dialog for actions
+     * 
+     * @param string $actionName
+     * @param array $ids
+     * @return array|null
+     */
+    protected function handleConfirmation(string $actionName, array $ids): ?array
+    {
+        // Remove _confirm suffix to get the actual action name
+        $baseActionName = str_replace('_confirm', '', $actionName);
+
+        // Check table actions
+        foreach ($this->table->getActions() as $action) {
+            if ($action instanceof TableActionGroup) {
+                foreach ($action->getActions() as $groupAction) {
+                    if ($groupAction->getName() === $baseActionName) {
+                        return ['confirmData' => $groupAction->getConfirmData($ids)];
+                    }
+                }
+            } elseif ($action instanceof TableAction) {
+                if ($action->getName() === $baseActionName) {
+                    return ['confirmData' => $action->getConfirmData($ids)];
+                }
+            }
+        }
+
+        if (count($ids) === 1) {
+            // Get the model for the ID
+            $model = $this->table->getQuery()->find($ids[0]);
+
+            if ($model) {
+                foreach ($this->table->getColumns() as $column) {
+                    if ($column instanceof ActionColumn) {
+                        $columnAction = $column->getAction();
+                        if ($columnAction instanceof ColumnActionGroup) {
+                            foreach ($columnAction->getActions() as $action) {
+                                if ($action->getName() === $baseActionName) {
+                                    return ['confirmData' => $action->getConfirmData($model)];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         return null;
     }
@@ -178,7 +232,7 @@ abstract class InertiaDatatable
         }
 
         $props = [
-            'actionResult'       =>  $this->handleAction(),
+            'actionResult'       => $this->handleAction(),
             'columns'            => fn() => $this->getColumns(),
             'filters'            => fn() => $this->getFilters(),
             'actions'            => fn() => $this->getActions(),

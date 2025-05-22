@@ -6,6 +6,8 @@ namespace Arkhas\InertiaDatatable\Actions;
 
 class TableAction
 {
+    protected $confirmCallback = null;
+
     protected string $name;
     protected ?string $label = null;
     protected ?string $styles = null;
@@ -88,6 +90,7 @@ class TableAction
         return $this->handleCallback;
     }
 
+
     public function execute(array $ids): mixed
     {
         if ($this->handleCallback === null) {
@@ -97,9 +100,65 @@ class TableAction
         return call_user_func($this->handleCallback, $ids);
     }
 
+    /**
+     * Add a confirmation dialog before executing the action.
+     *
+     * @param callable $callback A callback that returns an array with the following keys:
+     *                          - title: The title of the confirmation dialog
+     *                          - message: The message of the confirmation dialog
+     *                          - confirm: The text of the confirm button
+     *                          - cancel: The text of the cancel button
+     *                          - disabled: Whether the confirm button should be disabled
+     * @return $this
+     */
+    public function confirm(callable $callback): self
+    {
+        $this->confirmCallback = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Get the confirmation callback.
+     *
+     * @return callable|null
+     */
+    public function getConfirmCallback(): ?callable
+    {
+        return $this->confirmCallback;
+    }
+
+    /**
+     * Check if the action has a confirmation callback.
+     *
+     * @return bool
+     */
+    public function hasConfirmCallback(): bool
+    {
+        return $this->confirmCallback !== null;
+    }
+
+    /**
+     * Add the confirmation data to the array.
+     *
+     * @param array $array
+     * @param array $ids
+     * @return array
+     */
+    protected function addConfirmToArray(array $array, array $ids = []): array
+    {
+        $array['hasConfirmCallback'] = $this->hasConfirmCallback();
+
+        if ($this->hasConfirmCallback()) {
+            $array['confirmData'] = call_user_func($this->confirmCallback, $ids);
+        }
+
+        return $array;
+    }
+
     public function toArray(): array
     {
-        return [
+        $array = [
             'type' => 'action',
             'name' => $this->name,
             'label' => $this->getLabel(),
@@ -108,5 +167,22 @@ class TableAction
             'iconPosition' => $this->iconPosition,
             'props' => $this->props,
         ];
+
+        return $this->addConfirmToArray($array);
+    }
+
+    /**
+     * Get the confirmation data for the given IDs.
+     *
+     * @param array $ids
+     * @return array|null
+     */
+    public function getConfirmData(array $ids): ?array
+    {
+        if (!$this->hasConfirmCallback()) {
+            return null;
+        }
+
+        return call_user_func($this->confirmCallback, $ids);
     }
 }
