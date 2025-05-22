@@ -629,6 +629,140 @@ class InertiaDatatableTest extends TestCase
         $this->assertNull($result);
     }
 
+    public function test_handle_action_with_confirmation()
+    {
+        $datatable = new TestModelDataTable();
+
+        $action = TableAction::make('test_action')
+            ->confirm(function ($ids) {
+                return [
+                    'title' => 'Confirm Action',
+                    'message' => 'Are you sure you want to perform this action?',
+                    'confirm' => 'Yes',
+                    'cancel' => 'No'
+                ];
+            });
+
+        $table = EloquentTable::make(TestModel::query())->actions([$action]);
+        $datatable->table($table);
+
+        $request = new Request([
+            'action' => 'test_action_confirm',
+            'ids'    => [1, 2, 3]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        $result = $datatable->handleAction();
+        $this->assertEquals([
+            'confirmData' => [
+                'title' => 'Confirm Action',
+                'message' => 'Are you sure you want to perform this action?',
+                'confirm' => 'Yes',
+                'cancel' => 'No'
+            ]
+        ], $result);
+    }
+
+    public function test_handle_action_with_group_confirmation()
+    {
+        $datatable = new TestModelDataTable();
+
+        $groupAction = TableAction::make('group_action')
+            ->confirm(function ($ids) {
+                return [
+                    'title' => 'Confirm Group Action',
+                    'message' => 'Are you sure you want to perform this group action?',
+                    'confirm' => 'Yes',
+                    'cancel' => 'No'
+                ];
+            });
+
+        $actionGroup = TableActionGroup::make('test_group')->actions([$groupAction]);
+
+        $table = EloquentTable::make(TestModel::query())->actions([$actionGroup]);
+        $datatable->table($table);
+
+        $request = new Request([
+            'action' => 'group_action_confirm',
+            'ids'    => [4, 5, 6]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        $result = $datatable->handleAction();
+        $this->assertEquals([
+            'confirmData' => [
+                'title' => 'Confirm Group Action',
+                'message' => 'Are you sure you want to perform this group action?',
+                'confirm' => 'Yes',
+                'cancel' => 'No'
+            ]
+        ], $result);
+    }
+
+    public function test_handle_confirmation_with_column_action()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a test model
+        $model = TestModel::factory()->create(['id' => 123, 'name' => 'Test Model']);
+
+        $columnAction = ColumnAction::make('column_action')
+            ->confirm(function ($model) {
+                return [
+                    'title' => 'Confirm Column Action',
+                    'message' => "Are you sure you want to perform this action on {$model->name}?",
+                    'confirm' => 'Yes',
+                    'cancel' => 'No'
+                ];
+            });
+
+        $columnActionGroup = ColumnActionGroup::make()
+            ->actions([$columnAction]);
+
+        $actionColumn = ActionColumn::make('actions')
+            ->action($columnActionGroup);
+
+        $table = EloquentTable::make(TestModel::query())->columns([$actionColumn]);
+        $datatable->table($table);
+
+        $request = new Request([
+            'action' => 'column_action_confirm',
+            'ids'    => [123]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        $result = $datatable->handleAction();
+        $this->assertEquals([
+            'confirmData' => [
+                'title' => 'Confirm Column Action',
+                'message' => 'Are you sure you want to perform this action on Test Model?',
+                'confirm' => 'Yes',
+                'cancel' => 'No'
+            ]
+        ], $result);
+    }
+
+    public function test_handle_confirmation_with_non_existent_action()
+    {
+        $datatable = new TestModelDataTable();
+
+        $table = EloquentTable::make(TestModel::query());
+        $datatable->table($table);
+
+        $request = new Request([
+            'action' => 'non_existent_action_confirm',
+            'ids'    => [1, 2, 3]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        $result = $datatable->handleAction();
+        $this->assertNull($result);
+    }
+
     public function test_get_translations()
     {
         Config::set('app.locale', 'en');
@@ -815,6 +949,7 @@ class InertiaDatatableTest extends TestCase
                 'icon'         => 'pencil',
                 'iconPosition' => 'left',
                 'props'        => ['confirm' => true],
+                'hasConfirmCallback' => false,
             ]
         ], $actions);
     }
@@ -856,6 +991,7 @@ class InertiaDatatableTest extends TestCase
                         'icon'         => null,
                         'iconPosition' => 'left',
                         'props'        => [],
+                        'hasConfirmCallback' => false,
                     ],
                     [
                         'type'         => 'action',
@@ -865,6 +1001,7 @@ class InertiaDatatableTest extends TestCase
                         'icon'         => null,
                         'iconPosition' => 'left',
                         'props'        => [],
+                        'hasConfirmCallback' => false,
                     ]
                 ]
             ]

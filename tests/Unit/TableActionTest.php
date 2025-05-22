@@ -83,8 +83,53 @@ class TableActionTest extends TestCase
             'icon' => 'edit',
             'iconPosition' => 'left',
             'props' => ['confirm' => true],
+            'hasConfirmCallback' => false,
         ];
 
         $this->assertEquals($expected, $action->toArray());
+    }
+
+    public function test_to_array_with_confirm_callback()
+    {
+        $action = TableAction::make('delete')
+            ->label('Delete')
+            ->confirm(function ($ids) {
+                return [
+                    'title' => 'Confirm Delete',
+                    'message' => 'Are you sure you want to delete these items?',
+                    'confirm' => 'Yes',
+                    'cancel' => 'No'
+                ];
+            });
+
+        $result = $action->toArray();
+
+        $this->assertTrue($result['hasConfirmCallback']);
+        $this->assertArrayHasKey('confirmData', $result);
+        $this->assertEquals('Confirm Delete', $result['confirmData']['title']);
+    }
+
+    public function test_get_confirm_data_without_callback()
+    {
+        $action = TableAction::make('edit');
+        $this->assertNull($action->getConfirmData([1, 2, 3]));
+    }
+
+    public function test_get_confirm_data_with_callback()
+    {
+        $action = TableAction::make('delete')
+            ->confirm(function ($ids) {
+                return [
+                    'title' => 'Confirm Delete',
+                    'message' => 'Are you sure you want to delete ' . count($ids) . ' items?',
+                    'confirm' => 'Yes',
+                    'cancel' => 'No'
+                ];
+            });
+
+        $result = $action->getConfirmData([1, 2, 3]);
+
+        $this->assertEquals('Confirm Delete', $result['title']);
+        $this->assertEquals('Are you sure you want to delete 3 items?', $result['message']);
     }
 }

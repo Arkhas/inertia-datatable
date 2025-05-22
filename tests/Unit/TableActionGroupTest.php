@@ -82,6 +82,7 @@ class TableActionGroupTest extends TestCase
                     'props' => [],
                     'hasUrlCallback' => false,
                     'separator' => false,
+                    'hasConfirmCallback' => false,
                 ],
                 [
                     'name' => 'delete',
@@ -91,6 +92,7 @@ class TableActionGroupTest extends TestCase
                     'props' => [],
                     'hasUrlCallback' => false,
                     'separator' => false,
+                    'hasConfirmCallback' => false,
                 ]
             ],
         ];
@@ -127,6 +129,7 @@ class TableActionGroupTest extends TestCase
                     'icon' => 'edit',
                     'iconPosition' => 'left',
                     'props' => [],
+                    'hasConfirmCallback' => false,
                 ],
                 [
                     'type' => 'action',
@@ -136,6 +139,7 @@ class TableActionGroupTest extends TestCase
                     'icon' => 'trash',
                     'iconPosition' => 'left',
                     'props' => [],
+                    'hasConfirmCallback' => false,
                 ]
             ]
         ];

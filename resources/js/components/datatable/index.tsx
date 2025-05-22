@@ -13,13 +13,13 @@ import {
   FormattedColumn,
   FormattedData,
   PendingAction,
-  ConfirmDialogContent
+  ConfirmDialogContent,
+  Column
 } from './types';
 
 const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) => {
-  // Get data from Inertia page props
-  const page = usePage();
-  const { columns, filters, actions, currentFilters, data, pageSize, availablePageSizes, sort, direction, translations, actionResult, visibleColumns: propsVisibleColumns } = page.props as PageProps;
+
+  const { columns, filters, actions, currentFilters, data, pageSize, availablePageSizes, sort, direction, translations, actionResult, visibleColumns: propsVisibleColumns } = usePage().props;
 
   // Get translation function
   const { t } = useTranslation();
@@ -56,7 +56,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
   };
 
   // Format columns for display
-  const formattedColumns = columns ? columns.map(column => ({
+  const formattedColumns = columns ? columns.map((column: Column) => ({
     key: column.name,
     label: column.label || column.name.charAt(0).toUpperCase() + column.name.slice(1).replace(/_/g, ' '),
     isVisible: visibleColumns[column.name],
@@ -515,7 +515,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
           preserveScroll: true,
           only: ['actionResult'],
           onSuccess: (page) => {
-            const { actionResult } = page.props as any;
+            const { actionResult } = page.props;
 
             if (actionResult.confirmData) {
               // Set the confirmation dialog content
@@ -592,7 +592,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
           preserveScroll: true,
           only: ['actionResult'],
           onSuccess: (page) => {
-            const { actionResult } = page.props as any;
+            const { actionResult } = page.props;
 
             if (actionResult.confirmData) {
               // Set the confirmation dialog content

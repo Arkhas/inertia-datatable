@@ -81,7 +81,7 @@ export interface PendingAction {
 export interface FormattedData {
   [key: string]: ReactNode | string | number | boolean | null;
   _id?: number | string;
-  id?: number | string | object;
+  id?: number | string;
 }
 
 export interface Pagination {

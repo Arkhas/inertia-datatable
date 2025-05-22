@@ -113,6 +113,7 @@ class ColumnActionGroupTest extends TestCase
                     'props' => [],
                     'hasUrlCallback' => false,
                     'separator' => false,
+                    'hasConfirmCallback' => false,
                 ],
                 [
                     'name' => 'delete',
@@ -122,6 +123,7 @@ class ColumnActionGroupTest extends TestCase
                     'props' => [],
                     'hasUrlCallback' => false,
                     'separator' => false,
+                    'hasConfirmCallback' => false,
                 ]
             ],
         ];

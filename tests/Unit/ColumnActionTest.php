@@ -143,8 +143,59 @@ class ColumnActionTest extends TestCase
             'props' => ['variant' => 'primary'],
             'hasUrlCallback' => true,
             'separator' => true,
+            'hasConfirmCallback' => false,
         ];
 
         $this->assertEquals($expected, $action->toArray());
+    }
+
+    public function test_to_array_with_model_and_confirm_callback()
+    {
+        $model = TestModel::factory()->create(['id' => 123, 'name' => 'Test Item']);
+
+        $action = ColumnAction::make('delete')
+            ->label('Delete')
+            ->confirm(function ($model) {
+                return [
+                    'title' => 'Confirm Delete',
+                    'message' => "Are you sure you want to delete {$model->name}?",
+                    'confirm' => 'Yes',
+                    'cancel' => 'No'
+                ];
+            });
+
+        $result = $action->toArray($model);
+
+        $this->assertTrue($result['hasConfirmCallback']);
+        $this->assertArrayHasKey('confirmData', $result);
+        $this->assertEquals('Confirm Delete', $result['confirmData']['title']);
+        $this->assertEquals('Are you sure you want to delete Test Item?', $result['confirmData']['message']);
+    }
+
+    public function test_get_confirm_data_without_callback()
+    {
+        $action = ColumnAction::make('edit');
+        $model = TestModel::factory()->create();
+        $this->assertNull($action->getConfirmData($model));
+    }
+
+    public function test_get_confirm_data_with_callback()
+    {
+        $model = TestModel::factory()->create(['name' => 'Test Item']);
+
+        $action = ColumnAction::make('delete')
+            ->confirm(function ($model) {
+                return [
+                    'title' => 'Confirm Delete',
+                    'message' => "Are you sure you want to delete {$model->name}?",
+                    'confirm' => 'Yes',
+                    'cancel' => 'No'
+                ];
+            });
+
+        $result = $action->getConfirmData($model);
+
+        $this->assertEquals('Confirm Delete', $result['title']);
+        $this->assertEquals('Are you sure you want to delete Test Item?', $result['message']);
     }
 }

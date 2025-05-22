@@ -149,15 +149,6 @@ class ColumnAction
         return $this;
     }
 
-    /**
-     * Get the confirmation callback.
-     *
-     * @return callable|null
-     */
-    public function getConfirmCallback(): ?callable
-    {
-        return $this->confirmCallback;
-    }
 
     /**
      * Check if the action has a confirmation callback.

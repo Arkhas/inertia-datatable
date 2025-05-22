@@ -28,12 +28,21 @@ export const DatatableFilters: React.FC<DatatableFiltersProps> = ({
     const filter = filters?.find(f => f.name === filterName);
     if (!filter || !filter.filterOptions || !Array.isArray(filter.filterOptions)) return [];
 
-    return filter.filterOptions.map(option => ({
-      label: option.label,
-      value: option.value,
-      icon: option.icon ? <IconRenderer iconName={option.icon} icons={icons} /> : undefined,
-      count: option.count
-    }));
+    return filter.filterOptions.map(option => {
+      // Create a wrapper component for IconRenderer if icon exists
+      const IconComponent = option.icon
+        ? ({ className }: { className?: string }) => (
+            <IconRenderer iconName={option.icon} className={className} icons={icons} />
+          )
+        : undefined;
+
+      return {
+        label: option.label,
+        value: option.value,
+        icon: IconComponent,
+        count: option.count
+      };
+    });
   };
 
   const hasActiveFilters = Object.values(selectedFilterValues).some(set => set.size > 0);
