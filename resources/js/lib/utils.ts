@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function getIconByName(iconName: string): React.ComponentType<LucideProps> | null {
+export function getIconByName(iconName: string): any | null {
   if (!iconName) return null;
 
   // Try to get the icon from Lucide icons
