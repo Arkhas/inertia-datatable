@@ -9,14 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-
-interface ConfirmDialogContent {
-  title: string;
-  message: string;
-  confirm: string;
-  cancel: string;
-  disabled: boolean;
-}
+import { ConfirmDialogContent } from './types';
 
 interface DatatableConfirmDialogProps {
   open: boolean;

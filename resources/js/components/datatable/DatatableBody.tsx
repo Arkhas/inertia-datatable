@@ -18,17 +18,7 @@ import {
 import { Button } from "../ui/button";
 import { DataTableColumnHeader } from "../ui/data-table-column-header";
 import { IconRenderer } from './IconRenderer';
-
-interface Column {
-  key: string;
-  label: string;
-  isVisible: boolean;
-  hasIcon?: boolean;
-  type?: string;
-  sortable?: boolean;
-  filterable?: boolean;
-  toggable?: boolean;
-}
+import {Column} from "./types";
 
 interface DatatableBodyProps {
   columns: Column[];
@@ -194,27 +184,53 @@ export const DatatableBody: React.FC<DatatableBodyProps> = ({
 
                               return (
                                 <React.Fragment key={actionIndex}>
-                                  <DropdownMenuItem 
-                                    onClick={() => onRowAction(action.name, row._id as number | string, action.url, columnKey)}
-                                    className={action.styles || ''}
-                                    {...(action.props || {})}
-                                  >
-                                    {action.icon && action.iconPosition !== 'right' && (
-                                      <IconRenderer 
-                                        iconName={action.icon} 
-                                        className="h-4 w-4 mr-2" 
-                                        icons={icons} 
-                                      />
-                                    )}
-                                    {action.label}
-                                    {action.icon && action.iconPosition === 'right' && (
-                                      <IconRenderer 
-                                        iconName={action.icon} 
-                                        className="h-4 w-4 ml-2" 
-                                        icons={icons} 
-                                      />
-                                    )}
-                                  </DropdownMenuItem>
+                                  {action.url ? (
+                                    <DropdownMenuItem asChild>
+                                      <a 
+                                        href={action.url}
+                                        className={action.styles || ''}
+                                        {...(action.props || {})}
+                                      >
+                                        {action.icon && action.iconPosition !== 'right' && (
+                                          <IconRenderer 
+                                            iconName={action.icon} 
+                                            className="h-4 w-4 mr-2" 
+                                            icons={icons} 
+                                          />
+                                        )}
+                                        {action.label}
+                                        {action.icon && action.iconPosition === 'right' && (
+                                          <IconRenderer 
+                                            iconName={action.icon} 
+                                            className="h-4 w-4 ml-2" 
+                                            icons={icons} 
+                                          />
+                                        )}
+                                      </a>
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem 
+                                      onClick={() => onRowAction(action.name, row._id as number | string, action.url, columnKey)}
+                                      className={action.styles || ''}
+                                      {...(action.props || {})}
+                                    >
+                                      {action.icon && action.iconPosition !== 'right' && (
+                                        <IconRenderer 
+                                          iconName={action.icon} 
+                                          className="h-4 w-4 mr-2" 
+                                          icons={icons} 
+                                        />
+                                      )}
+                                      {action.label}
+                                      {action.icon && action.iconPosition === 'right' && (
+                                        <IconRenderer 
+                                          iconName={action.icon} 
+                                          className="h-4 w-4 ml-2" 
+                                          icons={icons} 
+                                        />
+                                      )}
+                                    </DropdownMenuItem>
+                                  )}
                                   {showSeparator && <DropdownMenuSeparator />}
                                 </React.Fragment>
                               );

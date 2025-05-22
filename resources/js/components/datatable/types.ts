@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 
 export interface Column {
+  key: string;
   name: string;
   label?: string;
   hasIcon?: boolean;
@@ -8,6 +9,7 @@ export interface Column {
   sortable?: boolean;
   filterable?: boolean;
   toggable?: boolean;
+  isVisible: boolean;
 }
 
 export interface FormattedColumn {

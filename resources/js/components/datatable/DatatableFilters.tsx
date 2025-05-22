@@ -2,23 +2,7 @@ import React from 'react';
 import { Button } from "../ui/button";
 import { DataTableFacetedFilter } from "../ui/data-table-faceted-filter";
 import { IconRenderer } from './IconRenderer';
-
-interface FilterOption {
-  value: string;
-  label: string;
-  icon?: string;
-  iconPosition?: string;
-  count?: number;
-}
-
-interface FilterDefinition {
-  name: string;
-  label: string;
-  options: Record<string, string>;
-  icons?: Record<string, string>;
-  multiple: boolean;
-  filterOptions?: FilterOption[];
-}
+import { FilterOption, FilterDefinition } from './types';
 
 interface DatatableFiltersProps {
   filters: FilterDefinition[];

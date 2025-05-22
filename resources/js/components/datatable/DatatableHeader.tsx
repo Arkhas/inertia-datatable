@@ -3,54 +3,7 @@ import { Input } from "../ui/input";
 import { DataTableViewOptions } from "../ui/data-table-view-options";
 import { DatatableFilters } from './DatatableFilters';
 import { DatatableActions } from './DatatableActions';
-
-interface Column {
-  key: string;
-  label: string;
-  isVisible: boolean;
-  hasIcon?: boolean;
-  type?: string;
-  sortable?: boolean;
-  filterable?: boolean;
-  toggable?: boolean;
-}
-
-interface FilterDefinition {
-  name: string;
-  label: string;
-  options: Record<string, string>;
-  icons?: Record<string, string>;
-  multiple: boolean;
-  filterOptions?: Array<{
-    value: string;
-    label: string;
-    icon?: string;
-    iconPosition?: string;
-    count?: number;
-  }>;
-}
-
-interface TableAction {
-  type: 'action';
-  name: string;
-  label: string;
-  styles?: string;
-  icon?: string;
-  iconPosition?: string;
-  props?: Record<string, any>;
-  hasConfirmCallback?: boolean;
-}
-
-interface TableActionGroup {
-  type: 'group';
-  name: string;
-  label: string;
-  styles?: string;
-  icon?: string;
-  iconPosition?: string;
-  props?: Record<string, any>;
-  actions: TableAction[];
-}
+import {Column, TableAction, TableActionGroup, FilterDefinition} from "./types";
 
 interface DatatableHeaderProps {
   columns: Column[];

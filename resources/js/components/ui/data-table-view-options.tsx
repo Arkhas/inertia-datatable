@@ -54,7 +54,7 @@ export function DataTableViewOptions({
   };
 
   return (
-    <DropdownMenu modal={true} closeOnSelect={false} open={isOpen} onOpenChange={setIsOpen}>
+    <DropdownMenu modal={true} open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"

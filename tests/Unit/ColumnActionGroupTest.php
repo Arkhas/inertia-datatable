@@ -95,7 +95,7 @@ class ColumnActionGroupTest extends TestCase
 
         $group = ColumnActionGroup::make()
             ->label('Actions')
-            ->icon('Ellipsis', 'right')
+            ->icon('Ellipsis')
             ->props(['variant' => 'outline'])
             ->actions($actions);
 

@@ -15,7 +15,7 @@ import {
 
 interface DataTableColumnHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   columnKey: string
-  title: string
+  title?: string
   isSortable?: boolean
   isToggable?: boolean
   isCheckboxColumn?: boolean
@@ -89,13 +89,15 @@ export function DataTableColumnHeader({
           >
             <span>{title}</span>
             {isSortable && (
-              isDesc ? (
-                <ArrowDown className="ml-2 h-4 w-4 text-current" />
-              ) : isAsc ? (
-                <ArrowUp className="ml-2 h-4 w-4 text-current" />
-              ) : (
-                <ChevronsUpDown className="ml-2 h-4 w-4 text-current" />
-              )
+              <>{
+                isDesc ? (
+                  <ArrowDown className="ml-2 h-4 w-4 text-current" />
+                ) : isAsc ? (
+                  <ArrowUp className="ml-2 h-4 w-4 text-current" />
+                ) : (
+                  <ChevronsUpDown className="ml-2 h-4 w-4 text-current" />
+                )
+              }</>
             )}
           </Button>
         </DropdownMenuTrigger>
@@ -106,7 +108,6 @@ export function DataTableColumnHeader({
                 onClick={() => {
                   if (onSort) {
                     onSort(columnKey, 'asc');
-                    // Blur the button after sorting to remove focus
                     if (buttonRef.current) {
                       buttonRef.current.blur();
                     }
@@ -121,7 +122,6 @@ export function DataTableColumnHeader({
                 onClick={() => {
                   if (onSort) {
                     onSort(columnKey, 'desc');
-                    // Blur the button after sorting to remove focus
                     if (buttonRef.current) {
                       buttonRef.current.blur();
                     }

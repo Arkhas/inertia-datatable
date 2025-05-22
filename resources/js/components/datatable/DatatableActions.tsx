@@ -7,28 +7,8 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { IconRenderer } from './IconRenderer';
+import {TableAction, TableActionGroup} from "./types";
 
-interface TableAction {
-  type: 'action';
-  name: string;
-  label: string;
-  styles?: string;
-  icon?: string;
-  iconPosition?: string;
-  props?: Record<string, any>;
-  hasConfirmCallback?: boolean;
-}
-
-interface TableActionGroup {
-  type: 'group';
-  name: string;
-  label: string;
-  styles?: string;
-  icon?: string;
-  iconPosition?: string;
-  props?: Record<string, any>;
-  actions: TableAction[];
-}
 
 interface DatatableActionsProps {
   actions: (TableAction | TableActionGroup)[];
