@@ -1,6 +1,7 @@
 import React from 'react';
 import { Input } from "../ui/input";
 import { DataTableViewOptions } from "./DataTableViewOptions";
+import { DataTableExport, ExportOptions } from "./DataTableExport";
 import { DatatableFilters } from './DatatableFilters';
 import { DatatableActions } from './DatatableActions';
 import {Column, TableAction, TableActionGroup, FilterDefinition} from "./types";
@@ -16,6 +17,10 @@ interface DatatableHeaderProps {
   onResetFilters: () => void;
   onActionClick: (actionName: string) => void;
   onToggleColumnVisibility: (columnKey: string, isVisible: boolean) => void;
+  onExport?: (options: ExportOptions) => void;
+  exportable?: boolean;
+  defaultExportType?: string;
+  defaultExportColumn?: string;
   t: (key: string) => string;
   icons?: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>>;
 }
@@ -31,6 +36,10 @@ export const DatatableHeader: React.FC<DatatableHeaderProps> = ({
   onResetFilters,
   onActionClick,
   onToggleColumnVisibility,
+  onExport,
+  exportable = true,
+  defaultExportType = 'csv',
+  defaultExportColumn = 'visible',
   t,
   icons = {}
 }) => {
@@ -84,6 +93,15 @@ export const DatatableHeader: React.FC<DatatableHeaderProps> = ({
               selectedRows={selectedRows}
               onActionClick={onActionClick}
               icons={icons}
+            />
+          )}
+
+          {exportable && onExport && (
+            <DataTableExport
+              onExport={onExport}
+              selectedRows={selectedRows}
+              defaultExportType={defaultExportType}
+              defaultExportColumn={defaultExportColumn}
             />
           )}
 

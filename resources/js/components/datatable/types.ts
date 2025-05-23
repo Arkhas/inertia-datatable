@@ -113,6 +113,9 @@ export interface PageProps {
     };
   };
   visibleColumns?: Record<string, boolean>;
+  exportable?: boolean;
+  exportType?: string;
+  exportColumn?: string;
 }
 
 export interface DatatableProps {

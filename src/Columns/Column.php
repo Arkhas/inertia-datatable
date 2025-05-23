@@ -20,6 +20,8 @@ class Column
     protected bool    $toggable       = true;
     protected ?array  $relationPath   = null;
     protected ?string $width          = null;
+    protected bool    $exportable     = true;
+    protected         $exportCallback = null;
 
     public static function make(string $name): self
     {
@@ -227,7 +229,7 @@ class Column
 
     public function getLabel(): ?string
     {
-        return $this->label;
+        return $this->label ?? ucfirst(str_replace('_', ' ', $this->getName()));
     }
 
     public function sortable(bool $sortable = true): self
@@ -278,11 +280,44 @@ class Column
         return $this->width;
     }
 
+    public function exportable(bool $exportable = true): self
+    {
+        $this->exportable = $exportable;
+
+        return $this;
+    }
+
+    public function isExportable(): bool
+    {
+        return $this->exportable;
+    }
+
+    public function exportAs(callable $callback): self
+    {
+        $this->exportCallback = $callback;
+
+        return $this;
+    }
+
+    public function getExportCallback(): ?callable
+    {
+        return $this->exportCallback;
+    }
+
+    public function getExportValue(object $model): mixed
+    {
+        if ($this->exportCallback !== null) {
+            return call_user_func($this->exportCallback, $model);
+        }
+
+        return $this->renderHtml($model);
+    }
+
     public function toArray(): array
     {
         $columnData = [
             'name'       => $this->getName(),
-            'label'      => $this->getLabel() ?? ucfirst(str_replace('_', ' ', $this->getName())),
+            'label'      => $this->getLabel(),
             'hasIcon'    => $this->getIconCallback() !== null,
             'sortable'   => $this->isSortable(),
             'searchable' => $this->isSearchable(),

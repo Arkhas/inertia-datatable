@@ -105,6 +105,13 @@ export const DatatableBody: React.FC<DatatableBodyProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
+          {data.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                {t('no_results')}
+              </TableCell>
+            </TableRow>
+          )}
           {data.map((row, index) => (
             <TableRow
               key={row.id !== undefined && row.id !== null ? (typeof row.id === 'object' ? `row-obj-${index}` : String(row.id)) : `row-${index}`}

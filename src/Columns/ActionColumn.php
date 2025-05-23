@@ -11,6 +11,7 @@ class ActionColumn extends Column
     protected $actionCallback = null;
     protected ?string $width= '40px';
     protected ?string $label = '';
+    protected bool $exportable = false;
 
 
     public static function make(string $name = 'actions'): self

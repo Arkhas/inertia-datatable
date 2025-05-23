@@ -12,6 +12,7 @@ class CheckboxColumn extends Column
     protected string $valueField = 'id';
     protected bool $toggable = false;
     protected ?string $width = '40px';
+    protected bool $exportable = false;
 
     public static function make(string $name = 'id'): self
     {

@@ -9,6 +9,7 @@ use Arkhas\InertiaDatatable\Actions\TableAction;
 use Arkhas\InertiaDatatable\Columns\ActionColumn;
 use Arkhas\InertiaDatatable\Columns\CheckboxColumn;
 use Arkhas\InertiaDatatable\Columns\ColumnActionGroup;
+use Arkhas\InertiaDatatable\Services\ExportService;
 use Error;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 abstract class InertiaDatatable
 {
@@ -158,13 +160,21 @@ abstract class InertiaDatatable
         return $currentFilterValues;
     }
 
-    public function render(string $component): JsonResponse|Response
+    public function render(string $component): JsonResponse|Response|BinaryFileResponse
     {
         if (!isset($this->table)) {
             throw new Error('No table set for datatable');
         }
 
-        return Inertia::render($component, $this->getProps());
+        $props = $this->getProps();
+
+        $request = $this->getRequest();
+        // Handle export if requested
+        if ($request->has('export')) {
+            return $this->handleExport();
+        }
+
+        return Inertia::render($component, $props);
     }
 
     /**
@@ -183,7 +193,7 @@ abstract class InertiaDatatable
         return session()->get($this->getSessionKey($key), $default);
     }
 
-    public function getProps(): array
+    public function getProps(): array|BinaryFileResponse
     {
         $request = $this->getRequest();
 
@@ -244,6 +254,9 @@ abstract class InertiaDatatable
             'currentFilters'     => fn() => $this->getCurrentFilterValues($filters),
             'translations'       => fn() => $this->getTranslations(),
             'visibleColumns'     => fn() => $visibleColumns,
+            'exportable'         => fn() => $this->table->isExportable(),
+            'exportType'         => fn() => $this->table->getExportType(),
+            'exportColumn'       => fn() => $this->table->getExportColumn(),
         ];
 
         return $props;
@@ -301,7 +314,7 @@ abstract class InertiaDatatable
         foreach ($this->table->getColumns() as $column) {
             $columnData = method_exists($column, 'toArray') ? $column->toArray() : [
                 'name'       => $column->getName(),
-                'label'      => $column->getLabel() ?? ucfirst(str_replace('_', ' ', $column->getName())),
+                'label'      => $column->getLabel(),
                 'hasIcon'    => method_exists($column, 'getIconCallback') && $column->getIconCallback() !== null,
                 'sortable'   => method_exists($column, 'isSortable') ? $column->isSortable() : true,
                 'searchable' => method_exists($column, 'isSearchable') ? $column->isSearchable() : true,
@@ -452,22 +465,6 @@ abstract class InertiaDatatable
             }
         }
 
-        // Get page size from request or session
-        $pageSize = $request->input('pageSize');
-        if ($pageSize !== null) {
-            // Store page size in session
-            $this->storeInSession('pageSize', $pageSize);
-        } else {
-            // Get page size from session or use default
-            $pageSize = $this->getFromSession('pageSize', $this->defaultPageSize);
-        }
-
-        $pageSize = (int)$pageSize;
-        if ($pageSize < 1) {
-            $pageSize = 1;
-        }
-        $query->limit($pageSize);
-
         return $query;
     }
 
@@ -549,5 +546,44 @@ abstract class InertiaDatatable
     public function getTable(): EloquentTable
     {
         return $this->table;
+    }
+
+    /**
+     * Handle export request
+     */
+    protected function handleExport(): BinaryFileResponse
+    {
+        $request = $this->getRequest();
+
+        // Check if the table is exportable
+        if (!$this->table->isExportable()) {
+            abort(403, 'This table is not exportable');
+        }
+
+        // Get export parameters
+        $exportType = $request->input('exportType', $this->table->getExportType());
+        $exportColumns = $request->input('exportColumns', $this->table->getExportColumn());
+        $exportRows = $request->input('exportRows', 'all');
+        $selectedIds = $request->input('selectedIds', '');
+
+        // Create export service
+        $exportService = new ExportService($this->getResults(), $this->table);
+
+        // Set selected IDs if exporting only selected rows
+        if ($exportRows === 'selected' && !empty($selectedIds)) {
+            $exportService->withSelectedIds(explode(',', $selectedIds));
+        }
+
+        // Pass visible columns information if exporting only visible columns
+        if ($exportColumns === 'visible') {
+            $visibleColumns = $this->getFromSession('visibleColumns');
+            $exportService->withVisibleColumns($visibleColumns);
+        }
+
+        // Generate filename
+        $filename = $this->table->getExportName();
+
+        // Return the export file
+        return $exportService->export($filename);
     }
 }

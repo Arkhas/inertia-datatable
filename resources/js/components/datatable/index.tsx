@@ -6,6 +6,7 @@ import { DataTablePagination } from "./DataTablePagination";
 import { DatatableHeader } from './DatatableHeader';
 import { DatatableBody } from './DatatableBody';
 import { DatatableConfirmDialog } from './DatatableConfirmDialog';
+import { ExportOptions } from './DataTableExport';
 import {
   DatatableProps,
   FormattedData,
@@ -16,7 +17,7 @@ import {
 
 const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) => {
 
-  const { columns, filters, actions, currentFilters, data, pageSize, availablePageSizes, sort, direction, translations, actionResult, visibleColumns: propsVisibleColumns } = usePage().props;
+  const { columns, filters, actions, currentFilters, data, pageSize, availablePageSizes, sort, direction, translations, actionResult, visibleColumns: propsVisibleColumns, exportable = true, exportType = 'csv', exportColumn = 'visible' } = usePage().props;
 
   // Get translation function
   const { t } = useTranslation();
@@ -55,7 +56,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
   // Update columns with visibility information
   columns.forEach((column: Column) => {
     column.key = column.name;
-    column.isVisible = visibleColumns[column.name];
+    column.isVisible = visibleColumns[column.name] !== undefined ? visibleColumns[column.name] : true;
   });
 
   // Format data for display
@@ -467,6 +468,23 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
     }
   };
 
+  // Handle export
+  const handleExport = (options: ExportOptions) => {
+    const url = route(routeName, {});
+
+    // Prepare the export parameters
+    const exportParams = {
+      export: true,
+      exportType: options.type,
+      exportColumns: options.columns,
+      exportRows: options.rows,
+      selectedIds: options.rows === 'selected' ? selectedRows : []
+    };
+
+    // Download the export file
+    window.location.href = `${url}?${new URLSearchParams(exportParams as any).toString()}`;
+  };
+
   // Handle row actions
   const handleRowAction = (action: string, taskId: number | string, url?: string, columnKey?: string): void => {
     // Find the action in the row data
@@ -628,6 +646,10 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
         onToggleColumnVisibility={(columnKey, isVisible) => {
           handleDatatableAction('toggleColumnVisibility', { columnKey, isVisible });
         }}
+        onExport={handleExport}
+        exportable={exportable}
+        defaultExportType={exportType}
+        defaultExportColumn={exportColumn}
         t={t}
         icons={icons}
       />
