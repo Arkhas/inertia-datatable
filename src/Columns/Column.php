@@ -19,6 +19,7 @@ class Column
     protected bool    $searchable     = true;
     protected bool    $toggable       = true;
     protected ?array  $relationPath   = null;
+    protected ?string $width          = null;
 
     public static function make(string $name): self
     {
@@ -265,6 +266,18 @@ class Column
         return $this->searchable;
     }
 
+    public function width(?string $width = null): self
+    {
+        $this->width = $width;
+
+        return $this;
+    }
+
+    public function getWidth(): ?string
+    {
+        return $this->width;
+    }
+
     public function toArray(): array
     {
         $columnData = [
@@ -279,6 +292,11 @@ class Column
         // Add iconPosition if available
         if ($this->getIconPosition()) {
             $columnData['iconPosition'] = $this->getIconPosition();
+        }
+
+        // Add width if available
+        if ($this->getWidth()) {
+            $columnData['width'] = $this->getWidth();
         }
 
         return $columnData;

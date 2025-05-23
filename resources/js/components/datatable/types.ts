@@ -10,6 +10,7 @@ export interface Column {
   sortable?: boolean;
   filterable?: boolean;
   toggable?: boolean;
+  width?: string;
 }
 
 export interface TableAction {

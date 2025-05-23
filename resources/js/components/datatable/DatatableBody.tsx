@@ -54,7 +54,6 @@ export const DatatableBody: React.FC<DatatableBodyProps> = ({
   icons = {}
 }) => {
   const visibleColumns = columns.filter(column => column.isVisible);
-  const hasCheckboxColumn = columns.some(col => col.type === 'checkbox');
 
   return (
     <div className="rounded-md border">
@@ -64,7 +63,8 @@ export const DatatableBody: React.FC<DatatableBodyProps> = ({
             {visibleColumns.map((column) => (
               <TableHead
                 key={column.key}
-                className="cursor-pointer hover:bg-gray-50"
+                  className="cursor-pointer hover:bg-gray-50"
+                  style={ column.width ? { width: column.width } : {} }
               >
                 <DataTableColumnHeader
                   columnKey={column.key}

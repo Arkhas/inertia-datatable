@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Builder;
 class ActionColumn extends Column
 {
     protected $actionCallback = null;
+    protected ?string $width= '40px';
+    protected ?string $label = '';
+
 
     public static function make(string $name = 'actions'): self
     {

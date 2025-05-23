@@ -83,7 +83,7 @@ export function DataTableViewOptions({
           </div>
         </div>
         <div className="max-h-[300px] overflow-y-auto">
-          {filteredColumns.map((column) => {
+          {filteredColumns.filter(column => column.label).map((column) => {
             const isChecked = column.isVisible !== false;
             return (
               <DropdownMenuCheckboxItem

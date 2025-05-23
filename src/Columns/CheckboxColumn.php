@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Arkhas\InertiaDatatable\Columns;
 
-use Illuminate\Database\Eloquent\Builder;
-
 class CheckboxColumn extends Column
 {
     protected $valueCallback = null;
@@ -13,8 +11,9 @@ class CheckboxColumn extends Column
     protected $disabledCallback = null;
     protected string $valueField = 'id';
     protected bool $toggable = false;
+    protected ?string $width = '40px';
 
-    public static function make($valueField = 'id'): self
+    public static function make(string $name = 'id'): self
     {
         $instance = new self();
         $instance->name = 'checks';
@@ -24,10 +23,10 @@ class CheckboxColumn extends Column
         $instance->searchable = false;
 
         // Set the value field (can be a string or a callback)
-        if (is_callable($valueField)) {
-            $instance->valueCallback = $valueField;
+        if (is_callable($name)) {
+            $instance->valueCallback = $name;
         } else {
-            $instance->valueField = $valueField;
+            $instance->valueField = $name;
         }
 
         return $instance;
