@@ -5,11 +5,17 @@ The DataTable library provides a powerful and flexible way to create interactive
 
 ## Key Features
 • Easy to use: Simple API for creating and configuring DataTables
+
 • Flexible: Customizable columns, filters, and actions
+
 • Interactive: Built-in support for sorting, filtering, and pagination
+
 • Exportable: Built-in support for exporting data with customizable formatting
+
 • Responsive: Works well on all screen sizes
+
 • Integrated: Seamlessly integrates with Laravel and React
+
 
 
 ## Installation
