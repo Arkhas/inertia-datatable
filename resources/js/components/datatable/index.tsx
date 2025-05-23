@@ -55,7 +55,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
   // Format columns for display
   const formattedColumns = columns ? columns.map((column: Column) => ({
     key: column.name,
-    label: column.label || column.name.charAt(0).toUpperCase() + column.name.slice(1).replace(/_/g, ' '),
+    label: column.label ?? column.name.charAt(0).toUpperCase() + column.name.slice(1).replace(/_/g, ' '),
     isVisible: visibleColumns[column.name],
     hasIcon: column.hasIcon,
     type: column.type,

@@ -217,7 +217,7 @@ class Column
         return call_user_func($this->iconCallback, $model);
     }
 
-    public function label(string $label): self
+    public function label(?string $label = null): self
     {
         $this->label = $label;
 
