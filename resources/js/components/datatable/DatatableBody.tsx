@@ -63,7 +63,7 @@ export const DatatableBody: React.FC<DatatableBodyProps> = ({
             {visibleColumns.map((column) => (
               <TableHead
                 key={column.key}
-                  className="cursor-pointer hover:bg-gray-50"
+                  className="hover:bg-muted/50"
                   style={ column.width ? { width: column.width } : {} }
               >
                 <DataTableColumnHeader
