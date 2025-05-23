@@ -44,4 +44,21 @@ class ActionColumn extends Column
         // The actions will be rendered by the frontend
         return null;
     }
+
+    public function toArray(): array
+    {
+        $columnData = [
+            'name'         => $this->getName(),
+            'label'        => $this->getLabel(),
+            'hasIcon'      => $this->getIconCallback() !== null,
+            'sortable'     => $this->isSortable(),
+            'searchable'   => $this->isSearchable(),
+            'toggable'     => $this->isToggable(),
+            'iconPosition' => $this->getIconPosition() ?? 'left',
+            'type'         => 'action',
+            'action'       => $this->getAction()
+        ];
+
+        return $columnData;
+    }
 }

@@ -299,11 +299,6 @@ class Column
         return $this;
     }
 
-    public function getExportCallback(): ?callable
-    {
-        return $this->exportCallback;
-    }
-
     public function getExportValue(object $model): mixed
     {
         if ($this->exportCallback !== null) {
@@ -315,25 +310,15 @@ class Column
 
     public function toArray(): array
     {
-        $columnData = [
+        return [
             'name'       => $this->getName(),
             'label'      => $this->getLabel(),
             'hasIcon'    => $this->getIconCallback() !== null,
             'sortable'   => $this->isSortable(),
             'searchable' => $this->isSearchable(),
-            'toggable'   => $this->isToggable()
+            'toggable'   => $this->isToggable(),
+            'iconPosition' => $this->getIconPosition(),
+            'width'      => $this->getWidth(),
         ];
-
-        // Add iconPosition if available
-        if ($this->getIconPosition()) {
-            $columnData['iconPosition'] = $this->getIconPosition();
-        }
-
-        // Add width if available
-        if ($this->getWidth()) {
-            $columnData['width'] = $this->getWidth();
-        }
-
-        return $columnData;
     }
 }

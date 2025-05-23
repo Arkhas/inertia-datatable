@@ -14,7 +14,7 @@ class CheckboxColumn extends Column
     protected ?string $width = '40px';
     protected bool $exportable = false;
 
-    public static function make(string $name = 'id'): self
+    public static function make(string|callable $name = 'id'): self
     {
         $instance = new self();
         $instance->name = 'checks';
@@ -94,5 +94,21 @@ class CheckboxColumn extends Column
     public function getDisabledCallback(): ?callable
     {
         return $this->disabledCallback;
+    }
+
+    public function toArray(): array
+    {
+        $columnData = [
+            'name'         => $this->getName(),
+            'label'        => $this->getLabel(),
+            'hasIcon'      => $this->getIconCallback() !== null,
+            'sortable'     => $this->isSortable(),
+            'searchable'   => $this->isSearchable(),
+            'toggable'     => $this->isToggable(),
+            'iconPosition' => $this->getIconPosition() ?? 'left',
+            'type'         => 'checkbox'
+        ];
+
+        return $columnData;
     }
 }

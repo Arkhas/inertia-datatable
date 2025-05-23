@@ -318,7 +318,8 @@ abstract class InertiaDatatable
                 'hasIcon'    => method_exists($column, 'getIconCallback') && $column->getIconCallback() !== null,
                 'sortable'   => method_exists($column, 'isSortable') ? $column->isSortable() : true,
                 'searchable' => method_exists($column, 'isSearchable') ? $column->isSearchable() : true,
-                'toggable'   => method_exists($column, 'isToggable') ? $column->isToggable() : true
+                'toggable'   => method_exists($column, 'isToggable') ? $column->isToggable() : true,
+                'iconPosition' => method_exists($column, 'getIconPosition') ? $column->getIconPosition() : 'left'
             ];
 
             // Add type for checkbox columns
@@ -376,22 +377,7 @@ abstract class InertiaDatatable
         $filterDefinitions = $this->table->getFilters();
         $query             = $this->table->getQuery()->clone();
 
-
-        // Handle search if needed
-        if ($request->has('search')) {
-            $searchTerm = $request->input('search');
-            // If search term is empty, remove it from session
-            if ($searchTerm === '') {
-                session()->forget($this->getSessionKey('search'));
-                $searchTerm = null;
-            } else {
-                // Store search term in session
-                $this->storeInSession('search', $searchTerm);
-            }
-        } else {
-            // Get search term from session
-            $searchTerm = $this->getFromSession('search');
-        }
+        $searchTerm = $request->input('search');
 
         if ($searchTerm) {
             $query->where(function ($q) use ($searchTerm, $columns) {
@@ -568,6 +554,9 @@ abstract class InertiaDatatable
 
         // Create export service
         $exportService = new ExportService($this->getResults(), $this->table);
+
+        // Set the export type from the request
+        $exportService->withExportType($exportType);
 
         // Set selected IDs if exporting only selected rows
         if ($exportRows === 'selected' && !empty($selectedIds)) {

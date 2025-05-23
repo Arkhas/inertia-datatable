@@ -6,6 +6,7 @@ namespace Tests;
 
 use Arkhas\InertiaDatatable\InertiaDatatableServiceProvider;
 use Kirschbaum\PowerJoins\PowerJoinsServiceProvider;
+use Maatwebsite\Excel\ExcelServiceProvider;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -15,6 +16,7 @@ abstract class TestCase extends BaseTestCase
         return [
             InertiaDatatableServiceProvider::class,
             PowerJoinsServiceProvider::class,
+            ExcelServiceProvider::class,
         ];
     }
 

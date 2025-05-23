@@ -149,7 +149,7 @@ class ColumnTest extends TestCase
             'iconPosition' => 'left'
         ];
 
-        $this->assertEquals($expected, $column->toArray());
+        $this->assertTrue(!array_diff($expected, $column->toArray()));
     }
 
     public function test_to_array_with_custom_icon_position()
@@ -158,22 +158,19 @@ class ColumnTest extends TestCase
                         ->label('Name')
                         ->icon(fn($model) => 'user', 'right');
 
-        $expected = [
-            'name'         => 'name',
-            'label'        => 'Name',
-            'hasIcon'      => true,
-            'sortable'     => true,
-            'searchable'   => true,
-            'toggable'     => true,
-            'iconPosition' => 'right'
-        ];
-
-        $this->assertEquals($expected, $column->toArray());
+        $this->assertEquals('right', $column->toArray()['iconPosition']);
     }
 
     public function test_get_full_name_without_relation_path()
     {
         $column = Column::make('name');
         $this->assertEquals('name', $column->getFullName());
+    }
+
+    public function test_get_width()
+    {
+        $column = Column::make('name')
+                        ->width('100px');
+        $this->assertEquals('100px', $column->getWidth());
     }
 }

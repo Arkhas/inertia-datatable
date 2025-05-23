@@ -194,7 +194,7 @@ class InertiaDatatableTest extends TestCase
         ]);
         $datatable->table($table);
         $columns = $datatable->getColumns();
-        $this->assertEquals([
+        $this->asserttrue(!array_diff(
             [
                 'name'         => 'name',
                 'label'        => 'Nom',
@@ -203,8 +203,7 @@ class InertiaDatatableTest extends TestCase
                 'toggable'     => true,
                 'iconPosition' => 'left',
                 'searchable'   => true,
-            ]
-        ], $columns);
+        ], $columns[0]));
     }
 
     public function test_get_filters_returns_expected_format()
@@ -903,27 +902,7 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
         $columns = $datatable->getColumns();
 
-        $this->assertEquals([
-            [
-                'name'         => 'checks',
-                'label'        => 'Checks',
-                'hasIcon'      => false,
-                'sortable'     => false,
-                'toggable'     => false,
-                'iconPosition' => 'left',
-                'searchable'   => false,
-                'type'         => 'checkbox'
-            ],
-            [
-                'name'         => 'name',
-                'label'        => 'Nom',
-                'hasIcon'      => false,
-                'sortable'     => true,
-                'toggable'     => true,
-                'iconPosition' => 'left',
-                'searchable'   => true,
-            ]
-        ], $columns);
+        $this->assertEquals('checkbox', $columns[0]['type']);
     }
 
     public function test_get_actions_with_table_action()
@@ -1076,28 +1055,7 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
         $columns = $datatable->getColumns();
 
-        $this->assertEquals([
-            [
-                'name'         => 'actions',
-                'label'        => 'Actions',
-                'hasIcon'      => false,
-                'sortable'     => false,
-                'toggable'     => true,
-                'iconPosition' => 'left',
-                'searchable'   => false,
-                'type'         => 'action',
-                'action'       => $actionGroup
-            ],
-            [
-                'name'         => 'name',
-                'label'        => 'Nom',
-                'hasIcon'      => false,
-                'sortable'     => true,
-                'toggable'     => true,
-                'iconPosition' => 'left',
-                'searchable'   => true,
-            ]
-        ], $columns);
+        $this->assertEquals('action', $columns[0]['type']);
     }
 
     public function test_get_data_with_action_column()

@@ -40,6 +40,12 @@ class ExportService
         return $this;
     }
 
+    public function withExportType(string $exportType): self
+    {
+        $this->exportType = $exportType;
+        return $this;
+    }
+
     public function export(string $filename = 'export')
     {
         if (!$this->table->isExportable()) {
@@ -47,26 +53,7 @@ class ExportService
         }
 
         // Create a new exporter class
-        $exporter = new class($this->prepareData()) implements FromCollection, WithHeadings {
-            protected Collection $data;
-            protected array $headings;
-
-            public function __construct(array $exportData)
-            {
-                $this->data = collect($exportData['data']);
-                $this->headings = $exportData['headings'];
-            }
-
-            public function collection()
-            {
-                return $this->data;
-            }
-
-            public function headings(): array
-            {
-                return $this->headings;
-            }
-        };
+        $exporter = new DatatableExporter($this->prepareData());
 
         // Export based on the selected type
         if ($this->exportType === 'excel') {
@@ -76,7 +63,7 @@ class ExportService
         }
     }
 
-    protected function prepareData(): array
+    public function prepareData(): array
     {
         // Get all columns or only visible columns
         $columns = $this->table->getColumns();
