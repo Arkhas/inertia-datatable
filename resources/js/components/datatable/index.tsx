@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { useTranslation, updateTranslations } from '../../lib/useTranslation';
 import { Toaster, toast } from 'sonner';
-import { DataTablePagination } from "../ui/data-table-pagination";
+import { DataTablePagination } from "./DataTablePagination";
 import { DatatableHeader } from './DatatableHeader';
 import { DatatableBody } from './DatatableBody';
 import { DatatableConfirmDialog } from './DatatableConfirmDialog';
@@ -52,17 +52,11 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
     return selectedRows.some(id => String(id) === String(rowId));
   };
 
-  // Format columns for display
-  const formattedColumns = columns ? columns.map((column: Column) => ({
-    key: column.name,
-    label: column.label ?? column.name.charAt(0).toUpperCase() + column.name.slice(1).replace(/_/g, ' '),
-    isVisible: visibleColumns[column.name],
-    hasIcon: column.hasIcon,
-    type: column.type,
-    sortable: column.sortable !== undefined ? column.sortable : true,
-    filterable: column.filterable !== undefined ? column.filterable : true,
-    toggable: column.toggable !== undefined ? column.toggable : true
-  })) : [];
+  // Update columns with visibility information
+  columns.forEach((column: Column) => {
+    column.key = column.name;
+    column.isVisible = visibleColumns[column.name];
+  });
 
   // Format data for display
   const formattedData = data?.data ? data.data.map(item => {
@@ -251,7 +245,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
     // Handle column visibility toggle
     if (action === 'toggleColumnVisibility' && params.columnKey && typeof params.isVisible === 'boolean') {
       // Find the column to check if it's toggable
-      const column = formattedColumns.find(col => col.key === params.columnKey);
+      const column = columns.find(col => col.key === params.columnKey);
 
       // Only toggle visibility if the column is toggable
       if (column && (column.toggable !== false)) {
@@ -622,7 +616,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
     <div className="w-full space-y-4">
       {/* Header with search, filters, and actions */}
       <DatatableHeader
-        columns={formattedColumns}
+        columns={columns}
         filters={filters}
         actions={actions}
         selectedFilterValues={selectedFilterValues}
@@ -640,7 +634,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
 
       {/* Table body with rows and cells */}
       <DatatableBody
-        columns={formattedColumns}
+        columns={columns}
         data={formattedData}
         selectedRows={selectedRows}
         sort={sort}

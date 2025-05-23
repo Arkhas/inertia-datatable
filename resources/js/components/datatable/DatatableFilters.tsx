@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from "../ui/button";
-import { DataTableFacetedFilter } from "../ui/data-table-faceted-filter";
+import { DataTableFacetedFilter } from "./DataTableFacetedFilter";
 import { IconRenderer } from './IconRenderer';
 import { FilterOption, FilterDefinition } from './types';
 

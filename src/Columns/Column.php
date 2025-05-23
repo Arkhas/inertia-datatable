@@ -219,7 +219,7 @@ class Column
 
     public function label(?string $label = null): self
     {
-        $this->label = $label;
+        $this->label = $label ?? ucfirst(str_replace('_', ' ', $this->getName()));
 
         return $this;
     }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Input } from "../ui/input";
-import { DataTableViewOptions } from "../ui/data-table-view-options";
+import { DataTableViewOptions } from "./DataTableViewOptions";
 import { DatatableFilters } from './DatatableFilters';
 import { DatatableActions } from './DatatableActions';
 import {Column, TableAction, TableActionGroup, FilterDefinition} from "./types";
@@ -44,7 +44,7 @@ export const DatatableHeader: React.FC<DatatableHeaderProps> = ({
           onChange={(e) => onSearch(e.target.value)}
         />
       </div>
-      
+
       {/* Mobile: filters and reset button below search bar */}
       <div className="lg:hidden">
         <DatatableFilters
@@ -57,7 +57,7 @@ export const DatatableHeader: React.FC<DatatableHeaderProps> = ({
           icons={icons}
         />
       </div>
-      
+
       <div className="flex items-center justify-between">
         {/* Desktop: search bar inline with controls */}
         <div className="hidden lg:flex flex-1 items-center space-x-2">
@@ -75,7 +75,7 @@ export const DatatableHeader: React.FC<DatatableHeaderProps> = ({
             icons={icons}
           />
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {/* Render action buttons */}
           {actions && actions.length > 0 && (
@@ -86,7 +86,7 @@ export const DatatableHeader: React.FC<DatatableHeaderProps> = ({
               icons={icons}
             />
           )}
-          
+
           <DataTableViewOptions
             columns={columns}
             onToggleColumnVisibility={(columnKey, isVisible) => {

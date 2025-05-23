@@ -2,11 +2,11 @@ import * as React from "react"
 import { PlusCircle } from "lucide-react"
 
 import { cn } from "../../lib/utils"
-import { Checkbox } from "./checkbox"
-import { RadioGroup, RadioGroupItem } from "./radio-group"
+import { Checkbox } from "../ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group"
 import { useTranslation } from "../../lib/useTranslation"
-import { Badge } from "./badge"
-import { Button } from "./button"
+import { Badge } from "../ui/badge"
+import { Button } from "../ui/button"
 import {
   Command,
   CommandEmpty,
@@ -15,13 +15,13 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "./command"
+} from "../ui/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "./popover"
-import { Separator } from "./separator"
+} from "../ui/popover"
+import { Separator } from "../ui/separator"
 
 interface DataTableFacetedFilterProps {
   title?: string

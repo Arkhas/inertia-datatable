@@ -6,14 +6,14 @@ import {
 } from "lucide-react"
 
 import { useTranslation } from "../../lib/useTranslation"
-import { Button } from "./button"
+import { Button } from "../ui/button"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./select"
+} from "../ui/select"
 
 interface DataTablePaginationProps {
   pageSize: number;

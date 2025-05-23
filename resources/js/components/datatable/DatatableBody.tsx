@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { DataTableColumnHeader } from "../ui/data-table-column-header";
+import { DataTableColumnHeader } from "./DataTableColumnHeader";
 import { IconRenderer } from './IconRenderer';
 import {Column} from "./types";
 
@@ -61,15 +61,6 @@ export const DatatableBody: React.FC<DatatableBodyProps> = ({
       <Table>
         <TableHeader>
           <TableRow>
-            {/* Only show the select all checkbox if there's no checkbox column */}
-            {!hasCheckboxColumn && (
-              <TableHead className="w-[40px]">
-                <Checkbox
-                  checked={selectedRows.length === total && total > 0}
-                  onCheckedChange={onSelectAllRows}
-                />
-              </TableHead>
-            )}
             {visibleColumns.map((column) => (
               <TableHead
                 key={column.key}
@@ -119,19 +110,6 @@ export const DatatableBody: React.FC<DatatableBodyProps> = ({
               key={row.id !== undefined && row.id !== null ? (typeof row.id === 'object' ? `row-obj-${index}` : String(row.id)) : `row-${index}`}
               className={row.id !== undefined && row.id !== null && typeof row.id !== 'object' && isRowSelected(row.id as number | string) ? "bg-muted/50" : ""}
             >
-              {/* Only show the row checkbox if there's no checkbox column AND the row has a valid ID */}
-              {!hasCheckboxColumn && row.id !== undefined && row.id !== null && (
-                <TableCell>
-                  <Checkbox
-                    checked={isRowSelected(row.id as number | string)}
-                    onCheckedChange={() => onSelectRow(row.id as number | string)}
-                  />
-                </TableCell>
-              )}
-              {/* Add an empty cell if there's no checkbox column AND no valid ID */}
-              {!hasCheckboxColumn && (row.id === undefined || row.id === null) && (
-                <TableCell></TableCell>
-              )}
               {visibleColumns.map((column) => {
                 const columnKey = column.key;
                 const iconName = row[`${columnKey}_icon`] as string | undefined;
