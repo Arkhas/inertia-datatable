@@ -6,11 +6,8 @@ import { DataTablePagination } from "../ui/data-table-pagination";
 import { DatatableHeader } from './DatatableHeader';
 import { DatatableBody } from './DatatableBody';
 import { DatatableConfirmDialog } from './DatatableConfirmDialog';
-import { getIconComponent } from './IconRenderer';
 import {
   DatatableProps,
-  PageProps,
-  FormattedColumn,
   FormattedData,
   PendingAction,
   ConfirmDialogContent,
