@@ -1204,4 +1204,49 @@ class InertiaDatatableTest extends TestCase
 
 
     }
+    public function test_handle_confirmation_with_single_column_action()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a test model
+        $model = TestModel::factory()->create(['id' => 456, 'name' => 'Test Model']);
+
+        // Create a column action with confirm callback
+        $columnAction = ColumnAction::make('single_action')
+            ->confirm(function ($model) {
+                return [
+                    'title' => 'Confirm Single Action',
+                    'message' => "Are you sure you want to perform this action on {$model->name}?",
+                    'confirm' => 'Yes',
+                    'cancel' => 'No'
+                ];
+            });
+
+        // Create an action column with the single action (not a group)
+        $actionColumn = ActionColumn::make('actions')
+            ->action($columnAction);
+
+        $table = EloquentTable::make(TestModel::query())->columns([$actionColumn]);
+        $datatable->table($table);
+
+        // Create a request with the action name ending with _confirm
+        $request = new Request([
+            'action' => 'single_action_confirm',
+            'ids'    => [456]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        // Call handleAction which will internally call handleConfirmation
+        $result = $datatable->handleAction();
+
+        $this->assertEquals([
+            'confirmData' => [
+                'title' => 'Confirm Single Action',
+                'message' => 'Are you sure you want to perform this action on Test Model?',
+                'confirm' => 'Yes',
+                'cancel' => 'No'
+            ]
+        ], $result);
+    }
 }

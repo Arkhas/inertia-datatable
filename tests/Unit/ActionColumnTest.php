@@ -48,6 +48,17 @@ class ActionColumnTest extends TestCase
         $this->assertEquals($actionGroup, $column->getAction());
     }
 
+    public function test_action_group_and_get_action_group()
+    {
+        $action =
+                ColumnAction::make('edit')
+                    ->label('Edit')
+                    ->icon('Edit');
+
+        $column = ActionColumn::make()->action($action);
+        $this->assertEquals($action, $column->getAction());
+    }
+
     public function test_render_html_returns_null()
     {
         $column = ActionColumn::make();

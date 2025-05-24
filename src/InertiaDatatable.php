@@ -521,18 +521,7 @@ abstract class InertiaDatatable
                     if ($action instanceof ColumnActionGroup) {
                         // Get the action group data
                         $actionGroupArray = $action->toArray($model);
-
-                        // Check if there's only one action in the group
-                        if (count($actionGroupArray['actions']) === 1) {
-                            // For a single action in a group, format it like a single ColumnAction
-                            // This ensures it will be rendered as a direct button, not a dropdown
-                            $result["{$columnName}_action"] = [
-                                'actions' => $actionGroupArray['actions']
-                            ];
-                        } else {
-                            // For multiple actions, use the original format
-                            $result["{$columnName}_action"] = $actionGroupArray;
-                        }
+                        $result["{$columnName}_action"] = $actionGroupArray;
                     } elseif ($action instanceof ColumnAction) {
                         // Convert ColumnAction to array with actions property
                         $actionArray = $action->toArray($model);
@@ -544,8 +533,6 @@ abstract class InertiaDatatable
                         $result["{$columnName}_action"] = [
                             'actions' => [$actionArray]
                         ];
-                    } else {
-                        $result["{$columnName}_action"] = $action;
                     }
                 }
             }

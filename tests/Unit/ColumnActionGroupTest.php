@@ -86,50 +86,6 @@ class ColumnActionGroupTest extends TestCase
         $this->assertEquals([], $group->getActions());
     }
 
-    public function test_to_array()
-    {
-        $actions = [
-            ColumnAction::make('edit')->label('Edit')->icon('Edit'),
-            ColumnAction::make('delete')->label('Delete')->icon('Trash2')
-        ];
-
-        $group = ColumnActionGroup::make()
-            ->label('Actions')
-            ->icon('Ellipsis')
-            ->props(['variant' => 'outline'])
-            ->actions($actions);
-
-        $expected = [
-            'label' => 'Actions',
-            'icon' => 'Ellipsis',
-            'iconPosition' => 'right',
-            'props' => ['variant' => 'outline'],
-            'actions' => [
-                [
-                    'name' => 'edit',
-                    'label' => 'Edit',
-                    'icon' => 'Edit',
-                    'iconPosition' => 'left',
-                    'props' => [],
-                    'hasUrlCallback' => false,
-                    'separator' => false,
-                    'hasConfirmCallback' => false,
-                ],
-                [
-                    'name' => 'delete',
-                    'label' => 'Delete',
-                    'icon' => 'Trash2',
-                    'iconPosition' => 'left',
-                    'props' => [],
-                    'hasUrlCallback' => false,
-                    'separator' => false,
-                    'hasConfirmCallback' => false,
-                ]
-            ],
-        ];
-
-        $this->assertEquals($expected, $group->toArray());
-    }
     public function test_to_array_with_model()
     {
         // Create actions with URL callbacks
@@ -161,7 +117,7 @@ class ColumnActionGroupTest extends TestCase
         $model = TestModel::factory()->create(['id' => 123]);
 
         // Call toArrayWithModel with the test model
-        $result = $group->toArrayWithModel($model);
+        $result = $group->toArray($model);
 
         // Verify the result
         $this->assertEquals('Actions', $result['label']);

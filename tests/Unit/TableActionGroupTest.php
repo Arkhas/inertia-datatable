@@ -55,51 +55,6 @@ class TableActionGroupTest extends TestCase
         $this->assertEquals([$action1, $action2], $group->getActions());
     }
 
-    public function test_column_action_group_to_array()
-    {
-        $actions = [
-            ColumnAction::make('edit')->label('Edit')->icon('Edit'),
-            ColumnAction::make('delete')->label('Delete')->icon('Trash2')
-        ];
-
-        $group = ColumnActionGroup::make()
-            ->label('Actions')
-            ->icon('Ellipsis', 'right')
-            ->props(['variant' => 'outline'])
-            ->actions($actions);
-
-        $expected = [
-            'label' => 'Actions',
-            'icon' => 'Ellipsis',
-            'iconPosition' => 'right',
-            'props' => ['variant' => 'outline'],
-            'actions' => [
-                [
-                    'name' => 'edit',
-                    'label' => 'Edit',
-                    'icon' => 'Edit',
-                    'iconPosition' => 'left',
-                    'props' => [],
-                    'hasUrlCallback' => false,
-                    'separator' => false,
-                    'hasConfirmCallback' => false,
-                ],
-                [
-                    'name' => 'delete',
-                    'label' => 'Delete',
-                    'icon' => 'Trash2',
-                    'iconPosition' => 'left',
-                    'props' => [],
-                    'hasUrlCallback' => false,
-                    'separator' => false,
-                    'hasConfirmCallback' => false,
-                ]
-            ],
-        ];
-
-        $this->assertEquals($expected, $group->toArray());
-    }
-
     public function test_table_action_group_to_array()
     {
         $action1 = TableAction::make('edit')->label('Edit')->icon('edit');

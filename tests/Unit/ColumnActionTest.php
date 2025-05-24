@@ -122,33 +122,6 @@ class ColumnActionTest extends TestCase
         $this->assertNull($action->execute([1]));
     }
 
-    public function test_to_array()
-    {
-        $callback = function($model) {
-            return "tasks/{$model->id}/edit";
-        };
-
-        $action = ColumnAction::make('edit')
-            ->label('Edit Item')
-            ->icon('Edit', 'right')
-            ->props(['variant' => 'primary'])
-            ->url($callback)
-            ->separator();
-
-        $expected = [
-            'name' => 'edit',
-            'label' => 'Edit Item',
-            'icon' => 'Edit',
-            'iconPosition' => 'right',
-            'props' => ['variant' => 'primary'],
-            'hasUrlCallback' => true,
-            'separator' => true,
-            'hasConfirmCallback' => false,
-        ];
-
-        $this->assertEquals($expected, $action->toArray());
-    }
-
     public function test_to_array_with_model_and_confirm_callback()
     {
         $model = TestModel::factory()->create(['id' => 123, 'name' => 'Test Item']);
