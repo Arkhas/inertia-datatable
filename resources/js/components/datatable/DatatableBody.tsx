@@ -7,21 +7,15 @@ import {
     TableHeader,
     TableRow
 } from "../ui/table";
-import {Checkbox} from "../ui/checkbox";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import {Button} from "../ui/button";
 import {DataTableColumnHeader} from "./DataTableColumnHeader";
-import {IconRenderer} from './IconRenderer';
-import {Column} from "./types";
+import {Column as ColumnType} from "./types";
+import {Column} from "./columns/Column";
+import {CheckboxColumn} from "./columns/CheckboxColumn";
+import {ActionColumn} from "./columns/ActionColumn";
+import {ActionGroupColumn} from "./columns/ActionGroupColumn";
 
 interface DatatableBodyProps {
-    columns: Column[];
+    columns: ColumnType[];
     data: Record<string, React.ReactNode | string | number | boolean | null>[];
     selectedRows: (number | string)[];
     sort?: string;
@@ -119,190 +113,59 @@ export const DatatableBody: React.FC<DatatableBodyProps> = ({
                         >
                             {visibleColumns.map((column) => {
                                 const columnKey = column.key;
-                                const iconName = row[`${columnKey}_icon`] as string | undefined;
 
-                                // Handle checkbox columns
+                                // Render the appropriate column component based on type
                                 if (column.type === 'checkbox') {
-                                    const value = row[`${columnKey}_value`];
-                                    const isDisabled = row[`${columnKey}_disabled`] as boolean;
-
-
-                                    return (<TableCell key={columnKey}>
-
-                                        {value !== undefined && value !== null && (
-                                            <Checkbox
-                                                className={'aligne-text-top'}
-                                                checked={isRowSelected(value as number | string)}
-                                                disabled={isDisabled}
-                                                value={value as string}
-                                                onCheckedChange={() => onSelectRow(value as number | string)}
-                                            />
-                                            )}
-                                        </TableCell>
+                                    return (
+                                        <CheckboxColumn
+                                            key={columnKey}
+                                            columnKey={columnKey}
+                                            row={row}
+                                            isRowSelected={isRowSelected}
+                                            onSelectRow={onSelectRow}
+                                        />
                                     );
                                 }
 
-                                // Handle action columns
                                 if (column.type === 'action') {
                                     const actionData = row[`${columnKey}_action`];
-                                    if (actionData) {
-                                        // If there's only one action, render it as a button instead of a dropdown
-                                        if (actionData.actions && actionData.actions.length === 1) {
-                                            const action = actionData.actions[0];
+                                    if (actionData && actionData.actions) {
+                                        // If there's only one action, use ActionColumn
+                                        if (actionData.actions.length === 1) {
                                             return (
-                                                <TableCell key={columnKey} className="p-0">
-                                                    {action.url ? (
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="sm" 
-                                                            className={action.styles || ''}
-                                                            asChild
-                                                            {...(action.props || {})}
-                                                        >
-                                                            <a href={action.url}>
-                                                                {action.icon && action.iconPosition !== 'right' && (
-                                                                    <IconRenderer
-                                                                        iconName={action.icon}
-                                                                        className="h-4 w-4 mr-2"
-                                                                        icons={icons}
-                                                                    />
-                                                                )}
-                                                                {action.label}
-                                                                {action.icon && action.iconPosition === 'right' && (
-                                                                    <IconRenderer
-                                                                        iconName={action.icon}
-                                                                        className="h-4 w-4 ml-2"
-                                                                        icons={icons}
-                                                                    />
-                                                                )}
-                                                            </a>
-                                                        </Button>
-                                                    ) : (
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="sm" 
-                                                            className={action.styles || ''}
-                                                            onClick={() => onRowAction(action.name, row._id as number | string, action.url, columnKey)}
-                                                            {...(action.props || {})}
-                                                        >
-                                                            {action.icon && action.iconPosition !== 'right' && (
-                                                                <IconRenderer
-                                                                    iconName={action.icon}
-                                                                    className="h-4 w-4"
-                                                                    icons={icons}
-                                                                />
-                                                            )}
-                                                            {action.label && (
-                                                                <span className="mx-2">{action.label}</span>
-                                                            )}
-                                                            {action.icon && action.iconPosition === 'right' && (
-                                                                <IconRenderer
-                                                                    iconName={action.icon}
-                                                                    className="h-4 w-4"
-                                                                    icons={icons}
-                                                                />
-                                                            )}
-                                                        </Button>
-                                                    )}
-                                                </TableCell>
+                                                <ActionColumn
+                                                    key={columnKey}
+                                                    columnKey={columnKey}
+                                                    row={row}
+                                                    onRowAction={onRowAction}
+                                                    icons={icons}
+                                                />
                                             );
                                         }
 
-                                        // Otherwise, render as dropdown (for multiple actions)
+                                        // Otherwise use ActionGroupColumn for multiple actions
                                         return (
-                                            <TableCell key={columnKey} className="p-0">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                            <IconRenderer
-                                                                iconName={actionData.icon || 'MoreHorizontal'}
-                                                                className="h-4 w-4 text-current"
-                                                                icons={icons}
-                                                            />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        {actionData.actions && actionData.actions.map((action, actionIndex) => {
-                                                            // Check if we need to add a separator after this action
-                                                            const showSeparator = action.separator;
-
-                                                            return (
-                                                                <React.Fragment key={actionIndex}>
-                                                                    {action.url ? (
-                                                                        <DropdownMenuItem asChild>
-                                                                            <a
-                                                                                href={action.url}
-                                                                                className={action.styles || ''}
-                                                                                {...(action.props || {})}
-                                                                            >
-                                                                                {action.icon && action.iconPosition !== 'right' && (
-                                                                                    <IconRenderer
-                                                                                        iconName={action.icon}
-                                                                                        className="h-4 w-4 mr-2"
-                                                                                        icons={icons}
-                                                                                    />
-                                                                                )}
-                                                                                {action.label}
-                                                                                {action.icon && action.iconPosition === 'right' && (
-                                                                                    <IconRenderer
-                                                                                        iconName={action.icon}
-                                                                                        className="h-4 w-4 ml-2"
-                                                                                        icons={icons}
-                                                                                    />
-                                                                                )}
-                                                                            </a>
-                                                                        </DropdownMenuItem>
-                                                                    ) : (
-                                                                        <DropdownMenuItem
-                                                                            onClick={() => onRowAction(action.name, row._id as number | string, action.url, columnKey)}
-                                                                            className={action.styles || ''}
-                                                                            {...(action.props || {})}
-                                                                        >
-                                                                            {action.icon && action.iconPosition !== 'right' && (
-                                                                                <IconRenderer
-                                                                                    iconName={action.icon}
-                                                                                    className="h-4 w-4 mr-2"
-                                                                                    icons={icons}
-                                                                                />
-                                                                            )}
-                                                                            {action.label}
-                                                                            {action.icon && action.iconPosition === 'right' && (
-                                                                                <IconRenderer
-                                                                                    iconName={action.icon}
-                                                                                    className="h-4 w-4 ml-2"
-                                                                                    icons={icons}
-                                                                                />
-                                                                            )}
-                                                                        </DropdownMenuItem>
-                                                                    )}
-                                                                    {showSeparator && <DropdownMenuSeparator/>}
-                                                                </React.Fragment>
-                                                            );
-                                                        })}
-                                                        {(!actionData.actions || actionData.actions.length === 0) && (
-                                                            <DropdownMenuItem disabled>{t('no_actions_available')}</DropdownMenuItem>
-                                                        )}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
+                                            <ActionGroupColumn
+                                                key={columnKey}
+                                                columnKey={columnKey}
+                                                row={row}
+                                                onRowAction={onRowAction}
+                                                t={t}
+                                                icons={icons}
+                                            />
                                         );
                                     }
                                 }
 
-                                // Handle regular columns
+                                // Default to regular Column
                                 return (
-                                    <TableCell
+                                    <Column
                                         key={columnKey}
-                                    >
-                                        <div
-                                            className="flex items-center gap-2 text-ellipsis truncate"
-                                            style={column.width ? {width: column.width} : {}}
-                                        >
-                                            {iconName &&
-                                                <IconRenderer iconName={iconName} className="h-4 w-4" icons={icons}/>}
-                                            {row[columnKey]}
-                                        </div>
-                                    </TableCell>
+                                        columnKey={columnKey}
+                                        row={row}
+                                        column={column}
+                                        icons={icons}
+                                    />
                                 );
                             })}
                         </TableRow>

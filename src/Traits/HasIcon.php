@@ -17,7 +17,7 @@ trait HasIcon
      * @param string $position The position of the icon ('left' or 'right')
      * @return $this
      */
-    public function icon($icon, string $position = 'left'): self
+    public function icon(string|callable $icon, string $position = 'left'): self
     {
         if (is_callable($icon)) {
             $this->iconCallback = $icon;
