@@ -60,28 +60,15 @@ class ColumnActionGroup
         return $this->actions;
     }
 
-    public function toArray(): array
+    public function toArray($model = null): array
     {
         return [
             'label' => $this->getLabel(),
-            'icon' => $this->getIcon(),
-            'iconPosition' => $this->getIconPosition(),
-            'props' => $this->props,
-            'actions' => array_map(function (ColumnAction $action) {
-                return $action->toArray();
-            }, $this->actions),
-        ];
-    }
-
-    public function toArrayWithModel($model): array
-    {
-        return [
-            'label' => $this->getLabel(),
-            'icon' => $this->getIcon(),
+            'icon' => $this->renderIcon($model),
             'iconPosition' => $this->getIconPosition(),
             'props' => $this->props,
             'actions' => array_map(function (ColumnAction $action) use ($model) {
-                $actionArray = $action->toArray();
+                $actionArray = $action->toArray($model);
                 if ($action->hasUrlCallback()) {
                     $actionArray['url'] = $action->executeUrlCallback($model);
                 }

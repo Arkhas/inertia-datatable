@@ -479,7 +479,10 @@ abstract class InertiaDatatable
 
         $data = $results->paginate($pageSize);
 
-        $processedTasks = $data->getCollection()->map(function ($model, $index) use ($columns) {
+        $collection = $data->getCollection();
+        $processedData = collect();
+
+        foreach ($collection as $index => $model) {
             $result = $model->toArray();
 
             // Default ID is the index of the row
@@ -500,7 +503,6 @@ abstract class InertiaDatatable
                         $result["{$columnName}_icon"] = $icon;
                     }
                 }
-
                 // Handle checkbox columns
                 if ($column instanceof CheckboxColumn) {
                     $value = $column->getValue($model);
@@ -517,15 +519,29 @@ abstract class InertiaDatatable
                     $action = $column->getAction();
                     // Convert ColumnActionGroup to array if needed
                     if ($action instanceof ColumnActionGroup) {
-                        $result["{$columnName}_action"] = $action->toArrayWithModel($model);
+                        // Get the action group data
+                        $actionGroupArray = $action->toArray($model);
+
+                        // Check if there's only one action in the group
+                        if (count($actionGroupArray['actions']) === 1) {
+                            // For a single action in a group, format it like a single ColumnAction
+                            // This ensures it will be rendered as a direct button, not a dropdown
+                            $result["{$columnName}_action"] = [
+                                'actions' => $actionGroupArray['actions']
+                            ];
+                        } else {
+                            // For multiple actions, use the original format
+                            $result["{$columnName}_action"] = $actionGroupArray;
+                        }
                     } elseif ($action instanceof ColumnAction) {
                         // Convert ColumnAction to array with actions property
                         $actionArray = $action->toArray($model);
                         if ($action->hasUrlCallback()) {
                             $actionArray['url'] = $action->executeUrlCallback($model);
                         }
+                        // For a single ColumnAction, don't use a dropdown but a direct button
+                        // Wrap the action in an actions array so the frontend recognizes it as a single action
                         $result["{$columnName}_action"] = [
-                            'icon' => 'Ellipsis',
                             'actions' => [$actionArray]
                         ];
                     } else {
@@ -537,9 +553,9 @@ abstract class InertiaDatatable
             // Set the ID explicitly
             $result['id'] = $id;
 
-            return $result;
-        });
-        $data->setCollection($processedTasks);
+            $processedData->push($result);
+        }
+        $data->setCollection($processedData);
 
         return $data;
     }

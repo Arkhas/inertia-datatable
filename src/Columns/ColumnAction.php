@@ -168,7 +168,8 @@ class ColumnAction
         $array = [
             'name' => $this->name,
             'label' => $this->getLabel(),
-            'icon' => $this->getIcon(),
+            'hasIcon' => $this->hasIcon(),
+            'icon' => $model !== null ? $this->renderIcon($model) : $this->getIcon(),
             'iconPosition' => $this->getIconPosition(),
             'props' => $this->props,
             'hasUrlCallback' => $this->hasUrlCallback(),

@@ -126,32 +126,19 @@ export const DatatableBody: React.FC<DatatableBodyProps> = ({
                                         />
                                     );
                                 }
-
                                 if (column.type === 'action') {
                                     const actionData = row[`${columnKey}_action`];
-                                    if (actionData && actionData.actions) {
-                                        // If there's only one action, use ActionColumn
-                                        if (actionData.actions.length === 1) {
-                                            return (
-                                                <ActionColumn
-                                                    key={columnKey}
-                                                    columnKey={columnKey}
-                                                    row={row}
-                                                    onRowAction={onRowAction}
-                                                    icons={icons}
-                                                />
-                                            );
-                                        }
 
-                                        // Otherwise use ActionGroupColumn for multiple actions
+                                    if (actionData && actionData.actions) {
+
                                         return (
-                                            <ActionGroupColumn
+                                            <ActionColumn
                                                 key={columnKey}
                                                 columnKey={columnKey}
                                                 row={row}
                                                 onRowAction={onRowAction}
-                                                t={t}
                                                 icons={icons}
+                                                t={t}
                                             />
                                         );
                                     }
