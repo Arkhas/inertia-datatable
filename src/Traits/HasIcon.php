@@ -12,21 +12,21 @@ trait HasIcon
 
     /**
      * Set the icon for this element.
-     * 
+     *
      * @param string|callable $icon The icon name or a callback that returns the icon name
      * @param string $position The position of the icon ('left' or 'right')
      * @return $this
      */
     public function icon(string|callable $icon, string $position = 'left'): self
     {
-        if (is_callable($icon)) {
+        if ($icon instanceof \Closure) {
             $this->iconCallback = $icon;
             $this->icon = null;
         } else {
             $this->icon = $icon;
             $this->iconCallback = null;
         }
-        
+
         $this->iconPosition = $position;
 
         return $this;
@@ -34,7 +34,7 @@ trait HasIcon
 
     /**
      * Get the icon name.
-     * 
+     *
      * @return string|null
      */
     public function getIcon(): ?string
@@ -44,7 +44,7 @@ trait HasIcon
 
     /**
      * Get the icon callback.
-     * 
+     *
      * @return callable|null
      */
     public function getIconCallback(): ?callable
@@ -54,7 +54,7 @@ trait HasIcon
 
     /**
      * Get the icon position.
-     * 
+     *
      * @return string|null
      */
     public function getIconPosition(): ?string
@@ -64,7 +64,7 @@ trait HasIcon
 
     /**
      * Check if this element has an icon.
-     * 
+     *
      * @return bool
      */
     public function hasIcon(): bool
@@ -74,13 +74,14 @@ trait HasIcon
 
     /**
      * Render the icon for a specific model.
-     * 
+     *
      * @param object|null $model The model to render the icon for
      * @return string|null
      */
     public function renderIcon(?object $model = null): ?string
     {
         if ($this->iconCallback !== null && $model !== null) {
+
             return call_user_func($this->iconCallback, $model);
         }
 
