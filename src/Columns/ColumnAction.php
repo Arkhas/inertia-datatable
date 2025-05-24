@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Arkhas\InertiaDatatable\Columns;
 
+use Arkhas\InertiaDatatable\Traits\HasIcon;
+
 class ColumnAction
 {
+    use HasIcon;
+
     protected $confirmCallback = null;
 
     protected string $name;
     protected ?string $label = null;
-    protected ?string $icon = null;
-    protected ?string $iconPosition = 'left';
     protected $handleCallback = null;
     protected array $props = [];
     protected $urlCallback = null;
@@ -42,23 +44,6 @@ class ColumnAction
         return $this->label ?? ucfirst(str_replace('_', ' ', $this->name));
     }
 
-    public function icon(string $icon, string $position = 'left'): self
-    {
-        $this->icon = $icon;
-        $this->iconPosition = $position;
-
-        return $this;
-    }
-
-    public function getIcon(): ?string
-    {
-        return $this->icon;
-    }
-
-    public function getIconPosition(): ?string
-    {
-        return $this->iconPosition;
-    }
 
     public function props(array $props): self
     {
@@ -183,8 +168,8 @@ class ColumnAction
         $array = [
             'name' => $this->name,
             'label' => $this->getLabel(),
-            'icon' => $this->icon,
-            'iconPosition' => $this->iconPosition,
+            'icon' => $this->getIcon(),
+            'iconPosition' => $this->getIconPosition(),
             'props' => $this->props,
             'hasUrlCallback' => $this->hasUrlCallback(),
             'separator' => $this->separator,

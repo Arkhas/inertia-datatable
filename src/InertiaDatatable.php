@@ -8,6 +8,7 @@ use Arkhas\InertiaDatatable\Actions\TableActionGroup;
 use Arkhas\InertiaDatatable\Actions\TableAction;
 use Arkhas\InertiaDatatable\Columns\ActionColumn;
 use Arkhas\InertiaDatatable\Columns\CheckboxColumn;
+use Arkhas\InertiaDatatable\Columns\ColumnAction;
 use Arkhas\InertiaDatatable\Columns\ColumnActionGroup;
 use Arkhas\InertiaDatatable\Services\ExportService;
 use Error;
@@ -136,6 +137,10 @@ abstract class InertiaDatatable
                                 if ($action->getName() === $baseActionName) {
                                     return ['confirmData' => $action->getConfirmData($model)];
                                 }
+                            }
+                        } elseif ($columnAction instanceof ColumnAction) {
+                            if ($columnAction->getName() === $baseActionName) {
+                                return ['confirmData' => $columnAction->getConfirmData($model)];
                             }
                         }
                     }
@@ -315,7 +320,7 @@ abstract class InertiaDatatable
             $columnData = method_exists($column, 'toArray') ? $column->toArray() : [
                 'name'       => $column->getName(),
                 'label'      => $column->getLabel(),
-                'hasIcon'    => method_exists($column, 'getIconCallback') && $column->getIconCallback() !== null,
+                'hasIcon'    => method_exists($column, 'hasIcon') ? $column->hasIcon() : (method_exists($column, 'getIconCallback') && $column->getIconCallback() !== null),
                 'sortable'   => method_exists($column, 'isSortable') ? $column->isSortable() : true,
                 'searchable' => method_exists($column, 'isSearchable') ? $column->isSearchable() : true,
                 'toggable'   => method_exists($column, 'isToggable') ? $column->isToggable() : true,
@@ -513,6 +518,16 @@ abstract class InertiaDatatable
                     // Convert ColumnActionGroup to array if needed
                     if ($action instanceof ColumnActionGroup) {
                         $result["{$columnName}_action"] = $action->toArrayWithModel($model);
+                    } elseif ($action instanceof ColumnAction) {
+                        // Convert ColumnAction to array with actions property
+                        $actionArray = $action->toArray($model);
+                        if ($action->hasUrlCallback()) {
+                            $actionArray['url'] = $action->executeUrlCallback($model);
+                        }
+                        $result["{$columnName}_action"] = [
+                            'icon' => 'Ellipsis',
+                            'actions' => [$actionArray]
+                        ];
                     } else {
                         $result["{$columnName}_action"] = $action;
                     }

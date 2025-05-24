@@ -526,7 +526,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
           onSuccess: (page) => {
             const { actionResult } = page.props;
 
-            if (actionResult.confirmData) {
+            if (actionResult && actionResult.confirmData) {
               // Set the confirmation dialog content
               setConfirmDialogContent({
                 title: actionResult.confirmData.title || 'Are you sure?',
@@ -603,7 +603,7 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
           onSuccess: (page) => {
             const { actionResult } = page.props;
 
-            if (actionResult.confirmData) {
+            if (actionResult && actionResult.confirmData) {
               // Set the confirmation dialog content
               setConfirmDialogContent({
                 title: actionResult.confirmData.title || 'Are you sure?',

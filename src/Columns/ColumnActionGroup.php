@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace Arkhas\InertiaDatatable\Columns;
 
+use Arkhas\InertiaDatatable\Traits\HasIcon;
+
 class ColumnActionGroup
 {
+    use HasIcon;
+
     protected ?string $label = null;
-    protected ?string $icon = 'Ellipsis';
-    protected string $iconPosition = 'right';
     protected array $actions = [];
     protected array $props = [];
 
     public static function make(): self
     {
-        return new self();
+        $instance = new self();
+        $instance->icon = 'Ellipsis';
+        $instance->iconPosition = 'right';
+
+        return $instance;
     }
 
     public function label(string $label): self
@@ -29,23 +35,6 @@ class ColumnActionGroup
         return $this->label;
     }
 
-    public function icon(string $icon, string $position = 'right'): self
-    {
-        $this->icon = $icon;
-        $this->iconPosition = $position;
-
-        return $this;
-    }
-
-    public function getIcon(): ?string
-    {
-        return $this->icon;
-    }
-
-    public function getIconPosition(): ?string
-    {
-        return $this->iconPosition;
-    }
 
     public function props(array $props): self
     {
@@ -75,8 +64,8 @@ class ColumnActionGroup
     {
         return [
             'label' => $this->getLabel(),
-            'icon' => $this->icon,
-            'iconPosition' => $this->iconPosition,
+            'icon' => $this->getIcon(),
+            'iconPosition' => $this->getIconPosition(),
             'props' => $this->props,
             'actions' => array_map(function (ColumnAction $action) {
                 return $action->toArray();
@@ -88,8 +77,8 @@ class ColumnActionGroup
     {
         return [
             'label' => $this->getLabel(),
-            'icon' => $this->icon,
-            'iconPosition' => $this->iconPosition,
+            'icon' => $this->getIcon(),
+            'iconPosition' => $this->getIconPosition(),
             'props' => $this->props,
             'actions' => array_map(function (ColumnAction $action) use ($model) {
                 $actionArray = $action->toArray();

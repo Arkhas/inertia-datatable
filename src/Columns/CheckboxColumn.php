@@ -11,7 +11,7 @@ class CheckboxColumn extends Column
     protected $disabledCallback = null;
     protected string $valueField = 'id';
     protected bool $toggable = false;
-    protected ?string $width = '40px';
+    protected ?string $width = '30px';
     protected bool $exportable = false;
 
     public static function make(string|callable $name = 'id'): self
@@ -101,12 +101,13 @@ class CheckboxColumn extends Column
         $columnData = [
             'name'         => $this->getName(),
             'label'        => $this->getLabel(),
-            'hasIcon'      => $this->getIconCallback() !== null,
+            'hasIcon'      => $this->hasIcon(),
             'sortable'     => $this->isSortable(),
             'searchable'   => $this->isSearchable(),
             'toggable'     => $this->isToggable(),
             'iconPosition' => $this->getIconPosition() ?? 'left',
-            'type'         => 'checkbox'
+            'type'         => 'checkbox',
+            'width'        => $this->width,
         ];
 
         return $columnData;

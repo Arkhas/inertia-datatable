@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Arkhas\InertiaDatatable\Columns;
 
+use Arkhas\InertiaDatatable\Traits\HasIcon;
 use Illuminate\Database\Eloquent\Builder;
 
 class Column
 {
+    use HasIcon;
+
     protected string  $name;
     protected ?string $label          = null;
     protected         $orderCallback  = null;
     protected         $filterCallback = null;
     protected         $htmlCallback   = null;
-    protected         $iconCallback   = null;
-    protected ?string $iconPosition   = 'left';
     protected bool    $sortable       = true;
     protected bool    $searchable     = true;
     protected bool    $toggable       = true;
@@ -193,32 +194,6 @@ class Column
         return $this->htmlCallback;
     }
 
-    public function icon(callable $callback, string $position = 'left'): self
-    {
-        $this->iconCallback = $callback;
-        $this->iconPosition = $position;
-
-        return $this;
-    }
-
-    public function getIconCallback(): ?callable
-    {
-        return $this->iconCallback;
-    }
-
-    public function getIconPosition(): ?string
-    {
-        return $this->iconPosition;
-    }
-
-    public function renderIcon(object $model): ?string
-    {
-        if ($this->iconCallback === null) {
-            return null;
-        }
-
-        return call_user_func($this->iconCallback, $model);
-    }
 
     public function label(?string $label = null): self
     {
@@ -313,7 +288,7 @@ class Column
         return [
             'name'       => $this->getName(),
             'label'      => $this->getLabel(),
-            'hasIcon'    => $this->getIconCallback() !== null,
+            'hasIcon'    => $this->hasIcon(),
             'sortable'   => $this->isSortable(),
             'searchable' => $this->isSearchable(),
             'toggable'   => $this->isToggable(),

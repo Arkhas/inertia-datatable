@@ -50,7 +50,7 @@ class ActionColumn extends Column
         $columnData = [
             'name'         => $this->getName(),
             'label'        => $this->getLabel(),
-            'hasIcon'      => $this->getIconCallback() !== null,
+            'hasIcon'      => $this->hasIcon(),
             'sortable'     => $this->isSortable(),
             'searchable'   => $this->isSearchable(),
             'toggable'     => $this->isToggable(),

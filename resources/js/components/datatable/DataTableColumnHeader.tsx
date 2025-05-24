@@ -51,16 +51,11 @@ export function DataTableColumnHeader({
     // If it's a checkbox column, render a simple div with a checkbox
     if (isCheckboxColumn) {
         return (
-            <div
-                className={cn("flex items-center space-x-2 cursor-pointer", className)}
-                onClick={() => onCheckboxChange && onCheckboxChange()}
-            >
                 <Checkbox
                     checked={isAllChecked}
                     onCheckedChange={onCheckboxChange}
-                    className="mr-2"
+                    className=""
                 />
-            </div>
         );
     }
 
