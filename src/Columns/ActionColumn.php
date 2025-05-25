@@ -33,6 +33,28 @@ class ActionColumn extends Column
         return $this;
     }
 
+    /**
+     * Check if the action has a confirmation callback.
+     *
+     * @return bool
+     */
+    public function hasConfirmCallback(): bool
+    {
+        if ($this->actionCallback instanceof ColumnAction) {
+            return $this->actionCallback->hasConfirmCallback();
+        }
+
+        if ($this->actionCallback instanceof ColumnActionGroup) {
+            foreach ($this->actionCallback->getActions() as $action) {
+                if ($action->hasConfirmCallback()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public function getAction()
     {
         return $this->actionCallback;

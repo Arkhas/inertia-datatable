@@ -64,16 +64,16 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
     const row: FormattedData = {};
 
     // Store the original ID value from the server
-    if (item.id !== undefined) {
+    if (item._id !== undefined) {
+      row._id = item._id;
+    } else if (item.id !== undefined) {
       row._id = item.id;
     }
 
     columns.forEach(column => {
       const columnName = column.name;
-      if (item[`${columnName}_html`]) {
-        row[columnName] = <div dangerouslySetInnerHTML={{ __html: item[`${columnName}_html`] as string }} />;
-      } else {
-        row[columnName] = item[columnName];
+      if (item[`${columnName}`]) {
+        row[columnName] = <div dangerouslySetInnerHTML={{ __html: item[`${columnName}`] as string }} />;
       }
 
       // Store icon information if available
@@ -387,12 +387,12 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
       if (selectedRows.length === formattedData.length) {
         setSelectedRows([]);
       } else {
-        // Fallback to using only valid row.id values (no index fallback)
+        // Fallback to using only valid row._id values (no index fallback)
         const validRowIds = formattedData
           .map((row) => {
-            if (row.id !== undefined && row.id !== null) {
-              // Handle case where row.id is an object
-              return typeof row.id === 'object' ? null : row.id;
+            if (row._id !== undefined && row._id !== null) {
+              // Handle case where row._id is an object
+              return typeof row._id === 'object' ? null : row._id;
             }
             return null;
           })

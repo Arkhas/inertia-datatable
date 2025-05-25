@@ -139,10 +139,6 @@ class TableAction
     {
         $array['hasConfirmCallback'] = $this->hasConfirmCallback();
 
-        if ($this->hasConfirmCallback()) {
-            $array['confirmData'] = call_user_func($this->confirmCallback, $ids);
-        }
-
         return $array;
     }
 

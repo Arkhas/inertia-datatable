@@ -105,8 +105,7 @@ class TableActionTest extends TestCase
         $result = $action->toArray();
 
         $this->assertTrue($result['hasConfirmCallback']);
-        $this->assertArrayHasKey('confirmData', $result);
-        $this->assertEquals('Confirm Delete', $result['confirmData']['title']);
+        $this->assertArrayNotHasKey('confirmData', $result);
     }
 
     public function test_get_confirm_data_without_callback()

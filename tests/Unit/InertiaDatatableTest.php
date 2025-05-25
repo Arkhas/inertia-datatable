@@ -203,7 +203,7 @@ class InertiaDatatableTest extends TestCase
                 'toggable'     => true,
                 'iconPosition' => 'left',
                 'searchable'   => true,
-        ], $columns[0]));
+            ], $columns[0]));
     }
 
     public function test_get_filters_returns_expected_format()
@@ -313,7 +313,7 @@ class InertiaDatatableTest extends TestCase
         request()->replace(['pageSize' => 2]);
         $data  = $datatable->getData();
         $first = $data->items()[0];
-        $this->assertArrayHasKey('name_html', $first);
+        $this->assertArrayHasKey('name', $first);
         $this->assertArrayHasKey('name_icon', $first);
     }
 
@@ -350,8 +350,12 @@ class InertiaDatatableTest extends TestCase
         $datatable = new TestModelDataTable();
 
         // Create filter options with count
-        $opt1 = FilterOption::make('active')->label('Active')->count(function() { return 5; });
-        $opt2 = FilterOption::make('inactive')->label('Inactive')->count(function() { return 3; });
+        $opt1 = FilterOption::make('active')->label('Active')->count(function () {
+            return 5;
+        });
+        $opt2 = FilterOption::make('inactive')->label('Inactive')->count(function () {
+            return 3;
+        });
 
         $filter = Filter::make('status', 'Status')
                         ->options([$opt1, $opt2]);
@@ -495,7 +499,6 @@ class InertiaDatatableTest extends TestCase
         $data  = $datatable->getData();
         $first = $data->items()[0];
         $this->assertArrayHasKey('name', $first);
-        $this->assertArrayHasKey('name_html', $first);
         $this->assertArrayNotHasKey('name_icon', $first);
     }
 
@@ -512,31 +515,6 @@ class InertiaDatatableTest extends TestCase
         $this->assertEquals([], $filters[0]['options']);
         $this->assertEquals([], $filters[0]['icons']);
         $this->assertFalse($filters[0]['multiple']);
-    }
-
-    public function test_get_data_with_column_without_render_methods()
-    {
-        $datatable = new TestModelDataTable();
-        // Column without renderHtml or renderIcon (anonymous class, but inheriting from Column)
-        $column = new class('name') extends Column {
-            public static function make(string $name): Column
-            {
-                return new self($name);
-            }
-
-            public function __construct($name)
-            {
-                $this->name = $name;
-            }
-        };
-        $table  = EloquentTable::make(TestModel::query())->columns([$column]);
-        $datatable->table($table);
-        request()->replace(['pageSize' => 2]);
-        $data  = $datatable->getData();
-        $first = $data->items()[0];
-        $this->assertArrayHasKey('name', $first);
-        $this->assertArrayHasKey('name_html', $first); // the method still exists
-        $this->assertArrayNotHasKey('name_icon', $first);
     }
 
     public function test_handle_action_with_table_action()
@@ -633,14 +611,14 @@ class InertiaDatatableTest extends TestCase
         $datatable = new TestModelDataTable();
 
         $action = TableAction::make('test_action')
-            ->confirm(function ($ids) {
-                return [
-                    'title' => 'Confirm Action',
-                    'message' => 'Are you sure you want to perform this action?',
-                    'confirm' => 'Yes',
-                    'cancel' => 'No'
-                ];
-            });
+                             ->confirm(function ($ids) {
+                                 return [
+                                     'title'   => 'Confirm Action',
+                                     'message' => 'Are you sure you want to perform this action?',
+                                     'confirm' => 'Yes',
+                                     'cancel'  => 'No'
+                                 ];
+                             });
 
         $table = EloquentTable::make(TestModel::query())->actions([$action]);
         $datatable->table($table);
@@ -655,10 +633,10 @@ class InertiaDatatableTest extends TestCase
         $result = $datatable->handleAction();
         $this->assertEquals([
             'confirmData' => [
-                'title' => 'Confirm Action',
+                'title'   => 'Confirm Action',
                 'message' => 'Are you sure you want to perform this action?',
                 'confirm' => 'Yes',
-                'cancel' => 'No'
+                'cancel'  => 'No'
             ]
         ], $result);
     }
@@ -668,14 +646,14 @@ class InertiaDatatableTest extends TestCase
         $datatable = new TestModelDataTable();
 
         $groupAction = TableAction::make('group_action')
-            ->confirm(function ($ids) {
-                return [
-                    'title' => 'Confirm Group Action',
-                    'message' => 'Are you sure you want to perform this group action?',
-                    'confirm' => 'Yes',
-                    'cancel' => 'No'
-                ];
-            });
+                                  ->confirm(function ($ids) {
+                                      return [
+                                          'title'   => 'Confirm Group Action',
+                                          'message' => 'Are you sure you want to perform this group action?',
+                                          'confirm' => 'Yes',
+                                          'cancel'  => 'No'
+                                      ];
+                                  });
 
         $actionGroup = TableActionGroup::make('test_group')->actions([$groupAction]);
 
@@ -692,10 +670,10 @@ class InertiaDatatableTest extends TestCase
         $result = $datatable->handleAction();
         $this->assertEquals([
             'confirmData' => [
-                'title' => 'Confirm Group Action',
+                'title'   => 'Confirm Group Action',
                 'message' => 'Are you sure you want to perform this group action?',
                 'confirm' => 'Yes',
-                'cancel' => 'No'
+                'cancel'  => 'No'
             ]
         ], $result);
     }
@@ -708,20 +686,20 @@ class InertiaDatatableTest extends TestCase
         $model = TestModel::factory()->create(['id' => 123, 'name' => 'Test Model']);
 
         $columnAction = ColumnAction::make('column_action')
-            ->confirm(function ($model) {
-                return [
-                    'title' => 'Confirm Column Action',
-                    'message' => "Are you sure you want to perform this action on {$model->name}?",
-                    'confirm' => 'Yes',
-                    'cancel' => 'No'
-                ];
-            });
+                                    ->confirm(function ($model) {
+                                        return [
+                                            'title'   => 'Confirm Column Action',
+                                            'message' => "Are you sure you want to perform this action on {$model->name}?",
+                                            'confirm' => 'Yes',
+                                            'cancel'  => 'No'
+                                        ];
+                                    });
 
         $columnActionGroup = ColumnActionGroup::make()
-            ->actions([$columnAction]);
+                                              ->actions([$columnAction]);
 
         $actionColumn = ActionColumn::make('actions')
-            ->action($columnActionGroup);
+                                    ->action($columnActionGroup);
 
         $table = EloquentTable::make(TestModel::query())->columns([$actionColumn]);
         $datatable->table($table);
@@ -736,10 +714,10 @@ class InertiaDatatableTest extends TestCase
         $result = $datatable->handleAction();
         $this->assertEquals([
             'confirmData' => [
-                'title' => 'Confirm Column Action',
+                'title'   => 'Confirm Column Action',
                 'message' => 'Are you sure you want to perform this action on Test Model?',
                 'confirm' => 'Yes',
-                'cancel' => 'No'
+                'cancel'  => 'No'
             ]
         ], $result);
     }
@@ -760,6 +738,69 @@ class InertiaDatatableTest extends TestCase
 
         $result = $datatable->handleAction();
         $this->assertNull($result);
+    }
+
+    public function test_handle_action_with_column_action()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a test model
+        $model = TestModel::factory()->create(['id' => 123, 'name' => 'Test Model']);
+
+        // Create a column action with a handle callback that returns the model's name
+        $columnAction = ColumnAction::make('column_action')
+                                    ->handle(function ($model) {
+                                        return "Handled action for {$model->name}";
+                                    });
+
+        $actionColumn = ActionColumn::make('actions')
+                                    ->action($columnAction);
+
+        $table = EloquentTable::make(TestModel::query())->columns([$actionColumn]);
+        $datatable->table($table);
+
+        $request = new Request([
+            'action' => 'column_action',
+            'ids'    => [123]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        $result = $datatable->handleAction();
+        $this->assertEquals('Handled action for Test Model', $result);
+    }
+
+    public function test_handle_action_with_column_action_group()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a test model
+        $model = TestModel::factory()->create(['id' => 456, 'name' => 'Group Test Model']);
+
+        // Create a column action with a handle callback that returns the model's name
+        $columnAction = ColumnAction::make('group_column_action')
+                                    ->handle(function ($model) {
+                                        return "Handled group action for {$model->name}";
+                                    });
+
+        $columnActionGroup = ColumnActionGroup::make()
+                                              ->actions([$columnAction]);
+
+        $actionColumn = ActionColumn::make('actions')
+                                    ->action($columnActionGroup);
+
+        $table = EloquentTable::make(TestModel::query())->columns([$actionColumn]);
+        $datatable->table($table);
+
+        $request = new Request([
+            'action' => 'group_column_action',
+            'ids'    => [456]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        $result = $datatable->handleAction();
+        $this->assertEquals('Handled group action for Group Test Model', $result);
     }
 
     public function test_get_translations()
@@ -921,13 +962,13 @@ class InertiaDatatableTest extends TestCase
 
         $this->assertEquals([
             [
-                'type'         => 'action',
-                'name'         => 'edit',
-                'label'        => 'Edit',
-                'styles'       => 'primary',
-                'icon'         => 'pencil',
-                'iconPosition' => 'left',
-                'props'        => ['confirm' => true],
+                'type'               => 'action',
+                'name'               => 'edit',
+                'label'              => 'Edit',
+                'styles'             => 'primary',
+                'icon'               => 'pencil',
+                'iconPosition'       => 'left',
+                'props'              => ['confirm' => true],
                 'hasConfirmCallback' => false,
             ]
         ], $actions);
@@ -963,23 +1004,23 @@ class InertiaDatatableTest extends TestCase
                 'props'        => ['dropdown' => true],
                 'actions'      => [
                     [
-                        'type'         => 'action',
-                        'name'         => 'edit',
-                        'label'        => 'Edit',
-                        'styles'       => null,
-                        'icon'         => null,
-                        'iconPosition' => 'left',
-                        'props'        => [],
+                        'type'               => 'action',
+                        'name'               => 'edit',
+                        'label'              => 'Edit',
+                        'styles'             => null,
+                        'icon'               => null,
+                        'iconPosition'       => 'left',
+                        'props'              => [],
                         'hasConfirmCallback' => false,
                     ],
                     [
-                        'type'         => 'action',
-                        'name'         => 'delete',
-                        'label'        => 'Delete',
-                        'styles'       => null,
-                        'icon'         => null,
-                        'iconPosition' => 'left',
-                        'props'        => [],
+                        'type'               => 'action',
+                        'name'               => 'delete',
+                        'label'              => 'Delete',
+                        'styles'             => null,
+                        'icon'               => null,
+                        'iconPosition'       => 'left',
+                        'props'              => [],
                         'hasConfirmCallback' => false,
                     ]
                 ]
@@ -991,15 +1032,17 @@ class InertiaDatatableTest extends TestCase
     {
         $datatable = new TestModelDataTable();
 
-        $checkboxColumn = CheckboxColumn::make('id')
-                                        ->checked(function ($model) {
-                                            return $model->status === 'active';
-                                        })
-                                        ->disabled(function ($model) {
-                                            return $model->name === 'Bob';
-                                        });
 
-        $table = EloquentTable::make(TestModel::query())->columns([$checkboxColumn]);
+        $table = EloquentTable::make(TestModel::query())->columns([
+            Column::make('name'),
+            CheckboxColumn::make()
+                          ->checked(function ($model) {
+                              return $model->status === 'active';
+                          })
+                          ->disabled(function ($model) {
+                              return $model->name === 'Bob';
+                          })
+        ]);
         $datatable->table($table);
 
         request()->replace(['pageSize' => 10]);
@@ -1010,13 +1053,14 @@ class InertiaDatatableTest extends TestCase
 
         // Check the first item (Alice)
         $alice = $data->getCollection()->firstWhere('name', 'Alice');
+
         $this->assertNotNull($alice);
         $this->assertArrayHasKey('checks_value', $alice);
         $this->assertArrayHasKey('checks_checked', $alice);
         $this->assertArrayHasKey('checks_disabled', $alice);
 
         // Alice should have ID as value, be checked (active), and not disabled
-        $this->assertEquals($alice['id'], $alice['checks_value']);
+        $this->assertEquals($alice['_id'], $alice['checks_value']);
         $this->assertTrue($alice['checks_checked']);
         $this->assertFalse($alice['checks_disabled']);
 
@@ -1198,12 +1242,13 @@ class InertiaDatatableTest extends TestCase
 
         request()->replace(['filters' => []]);
 
-         $results = $datatable->getResults()->get();
+        $results = $datatable->getResults()->get();
         $this->assertTrue($results->contains('status', 'active'));
         $this->assertTrue($results->contains('status', 'inactive'));
 
 
     }
+
     public function test_handle_confirmation_with_single_column_action()
     {
         $datatable = new TestModelDataTable();
@@ -1213,18 +1258,18 @@ class InertiaDatatableTest extends TestCase
 
         // Create a column action with confirm callback
         $columnAction = ColumnAction::make('single_action')
-            ->confirm(function ($model) {
-                return [
-                    'title' => 'Confirm Single Action',
-                    'message' => "Are you sure you want to perform this action on {$model->name}?",
-                    'confirm' => 'Yes',
-                    'cancel' => 'No'
-                ];
-            });
+                                    ->confirm(function ($model) {
+                                        return [
+                                            'title'   => 'Confirm Single Action',
+                                            'message' => "Are you sure you want to perform this action on {$model->name}?",
+                                            'confirm' => 'Yes',
+                                            'cancel'  => 'No'
+                                        ];
+                                    });
 
         // Create an action column with the single action (not a group)
         $actionColumn = ActionColumn::make('actions')
-            ->action($columnAction);
+                                    ->action($columnAction);
 
         $table = EloquentTable::make(TestModel::query())->columns([$actionColumn]);
         $datatable->table($table);
@@ -1242,10 +1287,10 @@ class InertiaDatatableTest extends TestCase
 
         $this->assertEquals([
             'confirmData' => [
-                'title' => 'Confirm Single Action',
+                'title'   => 'Confirm Single Action',
                 'message' => 'Are you sure you want to perform this action on Test Model?',
                 'confirm' => 'Yes',
-                'cancel' => 'No'
+                'cancel'  => 'No'
             ]
         ], $result);
     }

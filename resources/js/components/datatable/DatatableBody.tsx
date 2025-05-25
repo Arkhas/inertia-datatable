@@ -108,8 +108,8 @@ export const DatatableBody: React.FC<DatatableBodyProps> = ({
                     )}
                     {data.map((row, index) => (
                         <TableRow
-                            key={row.id !== undefined && row.id !== null ? (typeof row.id === 'object' ? `row-obj-${index}` : String(row.id)) : `row-${index}`}
-                            className={row.id !== undefined && row.id !== null && typeof row.id !== 'object' && isRowSelected(row.id as number | string) ? "bg-muted/50" : ""}
+                            key={row._id !== undefined && row._id !== null ? (typeof row._id === 'object' ? `row-obj-${index}` : String(row._id)) : `row-${index}`}
+                            className={row._id !== undefined && row._id !== null && typeof row._id !== 'object' && isRowSelected(row._id as number | string) ? "bg-muted/50" : ""}
                         >
                             {visibleColumns.map((column) => {
                                 const columnKey = column.key;

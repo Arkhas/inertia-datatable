@@ -83,4 +83,67 @@ class ActionColumnTest extends TestCase
         $column = ActionColumn::make()->label('Actions');
         $this->assertEquals('Actions', $column->getLabel());
     }
+
+    public function test_has_confirm_callback_with_column_action()
+    {
+        // Test with a ColumnAction that has a confirmation callback
+        $action = ColumnAction::make('delete')
+            ->confirm(function ($model) {
+                return [
+                    'title' => 'Confirm Delete',
+                    'message' => 'Are you sure?',
+                    'confirm' => 'Yes',
+                    'cancel' => 'No'
+                ];
+            });
+
+        $column = ActionColumn::make()->action($action);
+        $this->assertTrue($column->hasConfirmCallback());
+
+        // Test with a ColumnAction that doesn't have a confirmation callback
+        $action = ColumnAction::make('edit');
+        $column = ActionColumn::make()->action($action);
+        $this->assertFalse($column->hasConfirmCallback());
+    }
+
+    public function test_has_confirm_callback_with_column_action_group()
+    {
+        // Test with a ColumnActionGroup that has at least one action with a confirmation callback
+        $actionGroup = ColumnActionGroup::make()
+            ->icon('Edit')
+            ->actions([
+                ColumnAction::make('edit')
+                    ->label('Edit')
+                    ->icon('Edit'),
+                ColumnAction::make('delete')
+                    ->label('Delete')
+                    ->icon('Trash')
+                    ->confirm(function ($model) {
+                        return [
+                            'title' => 'Confirm Delete',
+                            'message' => 'Are you sure?',
+                            'confirm' => 'Yes',
+                            'cancel' => 'No'
+                        ];
+                    })
+            ]);
+
+        $column = ActionColumn::make()->action($actionGroup);
+        $this->assertTrue($column->hasConfirmCallback());
+
+        // Test with a ColumnActionGroup that doesn't have any actions with a confirmation callback
+        $actionGroup = ColumnActionGroup::make()
+            ->icon('Edit')
+            ->actions([
+                ColumnAction::make('edit')
+                    ->label('Edit')
+                    ->icon('Edit'),
+                ColumnAction::make('view')
+                    ->label('View')
+                    ->icon('Eye')
+            ]);
+
+        $column = ActionColumn::make()->action($actionGroup);
+        $this->assertFalse($column->hasConfirmCallback());
+    }
 }

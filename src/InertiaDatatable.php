@@ -92,6 +92,33 @@ abstract class InertiaDatatable
                     }
                 }
             }
+
+            // Check column actions if we have a single ID
+            if (count($ids) === 1) {
+                // Get the model for the ID
+                $model = $this->table->getQuery()->clone()->find($ids[0]);
+
+                if ($model) {
+                    foreach ($this->table->getColumns() as $column) {
+                        if ($column instanceof ActionColumn) {
+                            $columnAction = $column->getAction();
+                            if ($columnAction instanceof ColumnActionGroup) {
+                                foreach ($columnAction->getActions() as $action) {
+                                    if ($action->getName() === $actionName) {
+                                        // Execute the action with the model
+                                        return $action->execute($model);
+                                    }
+                                }
+                            } elseif ($columnAction instanceof ColumnAction) {
+                                if ($columnAction->getName() === $actionName) {
+                                    // Execute the action with the model
+                                    return $columnAction->execute($model);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         return null;
@@ -127,7 +154,6 @@ abstract class InertiaDatatable
         if (count($ids) === 1) {
             // Get the model for the ID
             $model = $this->table->getQuery()->find($ids[0]);
-
             if ($model) {
                 foreach ($this->table->getColumns() as $column) {
                     if ($column instanceof ActionColumn) {
@@ -482,18 +508,16 @@ abstract class InertiaDatatable
         $collection = $data->getCollection();
         $processedData = collect();
 
-        foreach ($collection as $index => $model) {
-            $result = $model->toArray();
+        foreach ($collection as $model) {
+            $result = [];
 
-            // Default ID is the index of the row
-            $id = $index;
 
             foreach ($columns as $column) {
                 $columnName = $column->getName();
 
                 // Handle HTML rendering
                 if (method_exists($column, 'renderHtml')) {
-                    $result["{$columnName}_html"] = $column->renderHtml($model);
+                    $result["{$columnName}"] = $column->renderHtml($model);
                 }
 
                 // Handle icon rendering
@@ -509,9 +533,6 @@ abstract class InertiaDatatable
                     $result["{$columnName}_value"] = $value;
                     $result["{$columnName}_checked"] = $column->isChecked($model);
                     $result["{$columnName}_disabled"] = $column->isDisabled($model);
-
-                    // Use the value from CheckboxColumn as the ID
-                    $id = $value;
                 }
 
                 // Handle action columns
@@ -528,7 +549,6 @@ abstract class InertiaDatatable
                         if ($action->hasUrlCallback()) {
                             $actionArray['url'] = $action->executeUrlCallback($model);
                         }
-                        // For a single ColumnAction, don't use a dropdown but a direct button
                         // Wrap the action in an actions array so the frontend recognizes it as a single action
                         $result["{$columnName}_action"] = [
                             'actions' => [$actionArray]
@@ -536,10 +556,8 @@ abstract class InertiaDatatable
                     }
                 }
             }
-
-            // Set the ID explicitly
-            $result['id'] = $id;
-
+            $result['_id'] = $model->getKey();
+            
             $processedData->push($result);
         }
         $data->setCollection($processedData);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Arkhas\InertiaDatatable\Columns;
 
 use Arkhas\InertiaDatatable\Traits\HasIcon;
+use Illuminate\Database\Eloquent\Model;
 
 class ColumnAction
 {
@@ -107,13 +108,9 @@ class ColumnAction
         return $this->handleCallback;
     }
 
-    public function execute(array $ids): mixed
+    public function execute(Model $model): mixed
     {
-        if ($this->handleCallback === null) {
-            return null;
-        }
-
-        return call_user_func($this->handleCallback, $ids);
+        return $this->handleCallback ? call_user_func($this->handleCallback, $model) : null;
     }
 
     /**
@@ -155,10 +152,6 @@ class ColumnAction
     protected function addConfirmToArray(array $array, $model = null): array
     {
         $array['hasConfirmCallback'] = $this->hasConfirmCallback();
-
-        if ($this->hasConfirmCallback() && $model !== null) {
-            $array['confirmData'] = call_user_func($this->confirmCallback, $model);
-        }
 
         return $array;
     }

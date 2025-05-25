@@ -109,17 +109,20 @@ class ColumnActionTest extends TestCase
 
     public function test_execute()
     {
-        $action = ColumnAction::make('delete')->handle(function ($ids) {
-            return count($ids);
+         $model = TestModel::factory()->create(['id' => 123, 'name' => 'Test Item']);
+
+        $action = ColumnAction::make('delete')->handle(function (TestModel $model) {
+            return $model->id;
         });
 
-        $this->assertEquals(2, $action->execute([1, 2]));
+        $this->assertEquals(123, $action->execute($model));
     }
 
     public function test_execute_returns_null_without_callback()
     {
+        $model = TestModel::factory()->create(['id' => 123, 'name' => 'Test Item']);
         $action = ColumnAction::make('view');
-        $this->assertNull($action->execute([1]));
+        $this->assertNull($action->execute($model));
     }
 
     public function test_to_array_with_model_and_confirm_callback()
@@ -140,9 +143,7 @@ class ColumnActionTest extends TestCase
         $result = $action->toArray($model);
 
         $this->assertTrue($result['hasConfirmCallback']);
-        $this->assertArrayHasKey('confirmData', $result);
-        $this->assertEquals('Confirm Delete', $result['confirmData']['title']);
-        $this->assertEquals('Are you sure you want to delete Test Item?', $result['confirmData']['message']);
+        $this->assertArrayNotHasKey('confirmData', $result);
     }
 
     public function test_get_confirm_data_without_callback()
