@@ -97,7 +97,7 @@ class Column
             call_user_func($this->orderCallback, $query, $order);
         } else {
             if ($this->hasRelation()) {
-                 $query->orderByPowerJoins($this->getFullName(), $order);
+                 $query->orderByLeftPowerJoins($this->getFullName(), $order);
             } else {
                 // For regular columns, use a simple orderBy
                 $query->orderBy($this->name, $order);
