@@ -72,7 +72,7 @@ export const DatatableHeader: React.FC<DatatableHeaderProps> = ({
         <div className="hidden lg:flex flex-1 items-center space-x-2">
           <Input
             placeholder={t('search_placeholder')}
-            className="h-8 w-[150px] lg:w-[250px]"
+            className="h-8 w-[150px] lg:w-[150px]"
             onChange={(e) => onSearch(e.target.value)}
           />
           <DatatableFilters

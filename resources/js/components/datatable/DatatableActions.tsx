@@ -38,16 +38,16 @@ export const DatatableActions: React.FC<DatatableActionsProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`h-8 px-2 lg:px-3 ${action.styles || ''}`}
+                  className={`gap-x-2 h-8 px-2 lg:px-3 ${action.styles || ''}`}
                   disabled={selectedRows.length === 0}
                   {...action.props}
                 >
                   {action.icon && action.iconPosition !== 'right' && (
-                    <IconRenderer iconName={action.icon} className="h-4 w-4 mr-2" icons={icons} />
+                    <IconRenderer iconName={action.icon} className="h-4 w-4" icons={icons} />
                   )}
                   <span className={action.icon ? 'lg:block hidden' : ''}>{action.label}</span>
                   {action.icon && action.iconPosition === 'right' && (
-                    <IconRenderer iconName={action.icon} className="h-4 w-4 ml-2" icons={icons} />
+                    <IconRenderer iconName={action.icon} className="h-4 w-4" icons={icons} />
                   )}
                 </Button>
               </DropdownMenuTrigger>
@@ -60,11 +60,11 @@ export const DatatableActions: React.FC<DatatableActionsProps> = ({
                     {...subAction.props}
                   >
                     {subAction.icon && subAction.iconPosition !== 'right' && (
-                      <IconRenderer iconName={subAction.icon} className="h-4 w-4 mr-2" icons={icons} />
+                      <IconRenderer iconName={subAction.icon} className="h-4 w-4" icons={icons} />
                     )}
                     <span>{subAction.label}</span>
                     {subAction.icon && subAction.iconPosition === 'right' && (
-                      <IconRenderer iconName={subAction.icon} className="h-4 w-4 ml-2" icons={icons} />
+                      <IconRenderer iconName={subAction.icon} className="h-4 w-4" icons={icons} />
                     )}
                   </DropdownMenuItem>
                 ))}
@@ -78,17 +78,17 @@ export const DatatableActions: React.FC<DatatableActionsProps> = ({
               key={index}
               variant="outline"
               size="sm"
-              className={`h-8 px-2 lg:px-3 ${action.styles || ''}`}
+              className={`gap-x-2 h-8 px-2 lg:px-3 ${action.styles || ''}`}
               onClick={() => onActionClick(action.name)}
               disabled={selectedRows.length === 0}
               {...action.props}
             >
               {action.icon && action.iconPosition !== 'right' && (
-                <IconRenderer iconName={action.icon} className="h-4 w-4 mr-2" icons={icons} />
+                <IconRenderer iconName={action.icon} className="h-4 w-4" icons={icons} />
               )}
               <span className={action.icon ? 'lg:block hidden' : ''}>{action.label}</span>
               {action.icon && action.iconPosition === 'right' && (
-                <IconRenderer iconName={action.icon} className="h-4 w-4 ml-2" icons={icons} />
+                <IconRenderer iconName={action.icon} className="h-4 w-4" icons={icons} />
               )}
             </Button>
           );
