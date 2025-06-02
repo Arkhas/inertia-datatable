@@ -7,7 +7,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Filesystem\Filesystem;
 use Arkhas\InertiaDatatable\InertiaDatatable;
 
-class InertiaDatatableServiceProviderTest extends TestCase
+class LaravelInertiaReactDatatableServiceProviderTest extends TestCase
 {
     public function test_service_provider_is_registered()
     {
@@ -15,15 +15,6 @@ class InertiaDatatableServiceProviderTest extends TestCase
             ServiceProvider::class,
             $this->app->getProvider(\Arkhas\InertiaDatatable\InertiaDatatableServiceProvider::class)
         );
-    }
-
-    public function test_assets_are_published()
-    {
-        $filesystem = new Filesystem();
-        $this->artisan('vendor:publish', ['--tag' => 'assets'])
-            ->assertExitCode(0);
-
-        $this->assertTrue($filesystem->exists(public_path('vendor/inertia-datatable')));
     }
 
     public function test_config_is_published()

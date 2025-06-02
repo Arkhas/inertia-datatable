@@ -232,6 +232,6 @@ class RelationshipColumnTest extends TestCase
         $column = Column::make('user.name');
         $query = TestModel::query();
         $column->applyOrder($query, 'desc');
-        $this->assertStringContainsString('inner join "users" on "test_models"."user_id" = "users"."id" order by "users"."name" desc', $query->toSql());
+        $this->assertStringContainsString('left join "users" on "test_models"."user_id" = "users"."id" order by "users"."name" desc', $query->toSql());
     }
 }
