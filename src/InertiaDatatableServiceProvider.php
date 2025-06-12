@@ -16,13 +16,13 @@ class InertiaDatatableServiceProvider extends ServiceProvider
         // Publish configuration and assets
         $this->publishes([
             __DIR__.'/../config/inertia-datatable.php' => config_path('inertia-datatable.php'),
-        ], 'config');
+        ], 'inertia-datatable-config');
 
         $this->publishes([
             __DIR__.'/../dist' => public_path('vendor/inertia-datatable/dist'),
             __DIR__.'/../resources/js' => resource_path('js/vendor/inertia-datatable'),
             __DIR__.'/../tailwind.config.js' => base_path('vendor/arkhas/inertia-datatable/tailwind.config.js'),
-        ], 'assets');
+        ], 'inertia-datatable-assets');
 
         // Load translations
         $this->loadTranslationsFrom(__DIR__.'/../lang', 'inertia-datatable');
@@ -30,7 +30,7 @@ class InertiaDatatableServiceProvider extends ServiceProvider
         // Publish translations
         $this->publishes([
             __DIR__.'/../lang' => lang_path('vendor/inertia-datatable'),
-        ], 'translations');
+        ], 'inertia-datatable-lang');
     }
 
     /**

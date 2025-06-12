@@ -8,15 +8,9 @@ if (!i18n.isInitialized) {
     .use(initReactI18next)
     .init({
       resources: {
-        en: {
+        [document.documentElement.lang || 'en']: {
           translation: {
           } // Will be populated from Laravel config
-        },
-        fr: {
-          translation: {} // Will be populated from Laravel config
-        },
-        es: {
-          translation: {} // Will be populated from Laravel config
         }
       },
       lng: document.documentElement.lang || 'en', // Use HTML lang attribute or default to English
