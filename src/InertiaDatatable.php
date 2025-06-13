@@ -34,15 +34,10 @@ abstract class InertiaDatatable
         $this->setup();
     }
 
-    /**
-     * Get a unique session key for this datatable
-     */
     public function getSessionKey(string $suffix = ''): string
     {
-        $className = get_class($this);
-        $baseKey = 'datatable_' . md5($className);
-
-        return $suffix ? $baseKey . '_' . $suffix : $baseKey;
+        $baseKey = 'dt_' . md5(get_class($this));
+        return $suffix ? "{$baseKey}_{$suffix}" : $baseKey;
     }
 
     public abstract function setup(): void;
@@ -68,109 +63,105 @@ abstract class InertiaDatatable
 
     public function handleAction(): mixed
     {
-         $request = $this->getRequest();
+        $request = $this->getRequest();
 
-        if ($request->has('action') && $request->has('ids')) {
-            $actionName = $request->input('action');
-            $ids    = $request->input('ids');
+        if (!$request->has('action') || !$request->has('ids')) {
+            return null;
+        }
 
-            // Check if this is a confirmation request
-            if (str_ends_with($actionName, '_confirm')) {
-                return $this->handleConfirmation($actionName, $ids);
+        $actionName = $request->input('action');
+        $ids = $request->input('ids');
+
+        if (str_ends_with($actionName, '_confirm')) {
+            return $this->handleConfirmation($actionName, $ids);
+        }
+
+        // Try table actions first
+        foreach ($this->table->getActions() as $tableAction) {
+            if ($tableAction instanceof TableActionGroup) {
+                foreach ($tableAction->getActions() as $groupAction) {
+                    if ($groupAction->getName() === $actionName) {
+                        return $groupAction->execute($ids);
+                    }
+                }
+            } elseif ($tableAction instanceof TableAction && $tableAction->getName() === $actionName) {
+                return $tableAction->execute($ids);
+            }
+        }
+
+        // For single record actions
+        if (count($ids) !== 1) {
+            return null;
+        }
+
+        $model = $this->table->getQuery()->find($ids[0]);
+        if (!$model) {
+            return null;
+        }
+
+        foreach ($this->table->getColumns() as $column) {
+            if (!$column instanceof ActionColumn) {
+                continue;
             }
 
-            foreach ($this->table->getActions() as $action) {
-                if ($action instanceof TableActionGroup) {
-                    foreach ($action->getActions() as $groupAction) {
-                        if ($groupAction->getName() === $actionName) {
-                            return $groupAction->execute($ids);
-                        }
-                    }
-                } elseif ($action instanceof TableAction) {
+            $colAction = $column->getAction();
+
+            if ($colAction instanceof ColumnActionGroup) {
+                foreach ($colAction->getActions() as $action) {
                     if ($action->getName() === $actionName) {
-                        return $action->execute($ids);
+                        return $action->execute($model);
                     }
                 }
-            }
-
-            // Check column actions if we have a single ID
-            if (count($ids) === 1) {
-                // Get the model for the ID
-                $model = $this->table->getQuery()->clone()->find($ids[0]);
-
-                if ($model) {
-                    foreach ($this->table->getColumns() as $column) {
-                        if ($column instanceof ActionColumn) {
-                            $columnAction = $column->getAction();
-                            if ($columnAction instanceof ColumnActionGroup) {
-                                foreach ($columnAction->getActions() as $action) {
-                                    if ($action->getName() === $actionName) {
-                                        // Execute the action with the model
-                                        return $action->execute($model);
-                                    }
-                                }
-                            } elseif ($columnAction instanceof ColumnAction) {
-                                if ($columnAction->getName() === $actionName) {
-                                    // Execute the action with the model
-                                    return $columnAction->execute($model);
-                                }
-                            }
-                        }
-                    }
-                }
+            } elseif ($colAction instanceof ColumnAction && $colAction->getName() === $actionName) {
+                return $colAction->execute($model);
             }
         }
 
         return null;
     }
 
-    /**
-     * Handle confirmation dialog for actions
-     * 
-     * @param string $actionName
-     * @param array $ids
-     * @return array|null
-     */
     protected function handleConfirmation(string $actionName, array $ids): ?array
     {
-        // Remove _confirm suffix to get the actual action name
-        $baseActionName = str_replace('_confirm', '', $actionName);
+        $baseAction = str_replace('_confirm', '', $actionName);
 
-        // Check table actions
+        // Try table actions
         foreach ($this->table->getActions() as $action) {
             if ($action instanceof TableActionGroup) {
                 foreach ($action->getActions() as $groupAction) {
-                    if ($groupAction->getName() === $baseActionName) {
+                    if ($groupAction->getName() === $baseAction) {
                         return ['confirmData' => $groupAction->getConfirmData($ids)];
                     }
                 }
-            } elseif ($action instanceof TableAction) {
-                if ($action->getName() === $baseActionName) {
-                    return ['confirmData' => $action->getConfirmData($ids)];
-                }
+            } elseif ($action instanceof TableAction && $action->getName() === $baseAction) {
+                return ['confirmData' => $action->getConfirmData($ids)];
             }
         }
 
-        if (count($ids) === 1) {
-            // Get the model for the ID
-            $model = $this->table->getQuery()->find($ids[0]);
-            if ($model) {
-                foreach ($this->table->getColumns() as $column) {
-                    if ($column instanceof ActionColumn) {
-                        $columnAction = $column->getAction();
-                        if ($columnAction instanceof ColumnActionGroup) {
-                            foreach ($columnAction->getActions() as $action) {
-                                if ($action->getName() === $baseActionName) {
-                                    return ['confirmData' => $action->getConfirmData($model)];
-                                }
-                            }
-                        } elseif ($columnAction instanceof ColumnAction) {
-                            if ($columnAction->getName() === $baseActionName) {
-                                return ['confirmData' => $columnAction->getConfirmData($model)];
-                            }
-                        }
+        // Single record actions
+        if (count($ids) !== 1) {
+            return null;
+        }
+
+        $model = $this->table->getQuery()->find($ids[0]);
+        if (!$model) {
+            return null;
+        }
+
+        foreach ($this->table->getColumns() as $column) {
+            if (!$column instanceof ActionColumn) {
+                continue;
+            }
+
+            $columnAction = $column->getAction();
+
+            if ($columnAction instanceof ColumnActionGroup) {
+                foreach ($columnAction->getActions() as $action) {
+                    if ($action->getName() === $baseAction) {
+                        return ['confirmData' => $action->getConfirmData($model)];
                     }
                 }
+            } elseif ($columnAction instanceof ColumnAction && $columnAction->getName() === $baseAction) {
+                return ['confirmData' => $columnAction->getConfirmData($model)];
             }
         }
 
@@ -226,117 +217,93 @@ abstract class InertiaDatatable
 
     public function getProps(): array|BinaryFileResponse
     {
-        $request = $this->getRequest();
+        $req = $this->getRequest();
 
-        // Get values from request or session
-        $pageSize = $request->input('pageSize');
-        $sort = $request->input('sort');
-        $direction = $request->input('direction');
-        $filters = $request->input('filters');
-        $visibleColumns = $request->input('visibleColumns');
+        // Handle state persistence
+        $pageSize = $this->persistState('pageSize', $req->input('pageSize'), $this->defaultPageSize);
+        $sort = $this->persistState('sort', $req->input('sort'));
+        $direction = $this->persistState('direction', $req->input('direction'), 'asc');
+        $visibleCols = $this->persistState('visibleColumns', $req->input('visibleColumns'));
 
-        // If values are in the request, store them in session
-        if ($pageSize !== null) {
-            $this->storeInSession('pageSize', $pageSize);
-        } else {
-            // Get from session or use default
-            $pageSize = $this->getFromSession('pageSize', $this->defaultPageSize);
-        }
-
-        if ($sort !== null) {
-            $this->storeInSession('sort', $sort);
-            $this->storeInSession('direction', $direction ?? 'asc');
-        } else {
-            // Get from session
-            $sort = $this->getFromSession('sort');
-            $direction = $this->getFromSession('direction', 'asc');
-        }
-
+        // Special handling for filters
+        $filters = $req->input('filters');
         if ($filters !== null) {
-            // If filters is empty, remove it from session
             if (is_array($filters) && empty($filters)) {
                 session()->forget($this->getSessionKey('filters'));
             } else {
-                // Store filters in session
                 $this->storeInSession('filters', $filters);
             }
         } else {
-            // Get from session or use empty array
             $filters = $this->getFromSession('filters', []);
         }
 
-        if ($visibleColumns !== null) {
-            $this->storeInSession('visibleColumns', $visibleColumns);
-        } else {
-            // Get from session
-            $visibleColumns = $this->getFromSession('visibleColumns');
-        }
-
-        $props = [
-            'actionResult'       => $this->handleAction(),
-            'columns'            => fn() => $this->getColumns(),
-            'filters'            => fn() => $this->getFilters(),
-            'actions'            => fn() => $this->getActions(),
-            'data'               => fn() => $this->getData(),
-            'pageSize'           => fn() => $pageSize,
+        return [
+            'actionResult' => $this->handleAction(),
+            'columns' => fn() => $this->getColumns(),
+            'filters' => fn() => $this->getFilters(),
+            'actions' => fn() => $this->getActions(),
+            'data' => fn() => $this->getData(),
+            'pageSize' => fn() => $pageSize,
             'availablePageSizes' => fn() => $this->availablePageSizes,
-            'sort'               => fn() => $sort,
-            'direction'          => fn() => $direction,
-            'currentFilters'     => fn() => $this->getCurrentFilterValues($filters),
-            'translations'       => fn() => $this->getTranslations(),
-            'visibleColumns'     => fn() => $visibleColumns,
-            'exportable'         => fn() => $this->table->isExportable(),
-            'exportType'         => fn() => $this->table->getExportType(),
-            'exportColumn'       => fn() => $this->table->getExportColumn(),
+            'sort' => fn() => $sort,
+            'direction' => fn() => $direction,
+            'currentFilters' => fn() => $this->getCurrentFilterValues($filters),
+            'translations' => fn() => $this->getTranslations(),
+            'visibleColumns' => fn() => $visibleCols,
+            'exportable' => fn() => $this->table->isExportable(),
+            'exportType' => fn() => $this->table->getExportType(),
+            'exportColumn' => fn() => $this->table->getExportColumn(),
         ];
-
-        return $props;
     }
 
-    /**
-     * Get translations from Laravel's lang directory and package's lang directory
-     */
-    public function getTranslations(): array
+    private function persistState(string $key, $value, $default = null)
     {
-        $translations = [];
-        $locale = config('app.locale', 'en');
-        $translations[$locale] = [];
-
-        // Load translations from package
-        $packageTranslations = trans('inertia-datatable::messages', [], $locale);
-        if (is_array($packageTranslations)) {
-            $translations[$locale] = $this->convertPlaceholders($packageTranslations);
+        if ($value !== null) {
+            $this->storeInSession($key, $value);
+            return $value;
         }
 
-        // Load translations from vendor published files (will override package translations)
-        $vendorTranslations = trans('vendor/inertia-datatable/messages', [], $locale);
-        if (is_array($vendorTranslations) && $vendorTranslations !== []) {
-            $translations[$locale] = array_merge(
-                $translations[$locale],
-                $this->convertPlaceholders($vendorTranslations)
+        return $this->getFromSession($key, $default);
+    }
+
+    public function getTranslations(): array
+    {
+        $locale = config('app.locale', 'en');
+        $result = [$locale => []];
+
+        // Core translations
+        $core = trans('inertia-datatable::messages', [], $locale);
+        if (is_array($core)) {
+            $result[$locale] = $this->i18nify($core);
+        }
+
+        // Custom translations (override core)
+        $custom = trans('vendor/inertia-datatable/messages', [], $locale);
+        if (is_array($custom) && !empty($custom)) {
+            $result[$locale] = array_merge(
+                $result[$locale],
+                $this->i18nify($custom)
             );
         }
 
-        return $translations;
+        return $result;
     }
 
-    /**
-     * Convert Laravel-style placeholders (:key) to i18next style ({{key}})
-     */
-    protected function convertPlaceholders(array $translations): array
+    protected function i18nify(array $translations): array
     {
-        $result = [];
+        $out = [];
 
-        foreach ($translations as $key => $value) {
-            if (is_string($value)) {
-                // Replace :key with {{key}}
-                $result[$key] = preg_replace('/:(\w+)/', '{{$1}}', $value);
-            } else {
-                $result[$key] = $value;
+        foreach ($translations as $key => $translation) {
+            if (!is_string($translation)) {
+                $out[$key] = $translation;
+                continue;
             }
+
+            // Convert Laravel :var to i18next {{var}}
+            $out[$key] = preg_replace('/:(\w+)/', '{{$1}}', $translation);
         }
 
-        return $result;
+        return $out;
     }
 
     public function getColumns(): array
@@ -557,7 +524,7 @@ abstract class InertiaDatatable
                 }
             }
             $result['_id'] = $model->getKey();
-            
+
             $processedData->push($result);
         }
         $data->setCollection($processedData);

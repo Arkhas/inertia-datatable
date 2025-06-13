@@ -913,7 +913,7 @@ class InertiaDatatableTest extends TestCase
         $datatable = new TestModelDataTable();
 
         // Use reflection to access protected method
-        $reflectionMethod = new \ReflectionMethod(InertiaDatatable::class, 'convertPlaceholders');
+        $reflectionMethod = new \ReflectionMethod(InertiaDatatable::class, 'i18nify');
         $reflectionMethod->setAccessible(true);
 
         $translations = [
@@ -1293,5 +1293,201 @@ class InertiaDatatableTest extends TestCase
                 'cancel'  => 'No'
             ]
         ], $result);
+    }
+
+    public function test_handle_action_with_non_existent_model()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a column action
+        $columnAction = ColumnAction::make('test_action')
+                                    ->handle(function ($model) {
+                                        return "Handled action for {$model->name}";
+                                    });
+
+        $actionColumn = ActionColumn::make('actions')
+                                    ->action($columnAction);
+
+        $table = EloquentTable::make(TestModel::query())->columns([$actionColumn]);
+        $datatable->table($table);
+
+        // Create a request with a non-existent model ID
+        $request = new Request([
+            'action' => 'test_action',
+            'ids'    => [99999] // Non-existent ID
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        // Call handleAction
+        $result = $datatable->handleAction();
+
+        // Should return null because the model doesn't exist
+        $this->assertNull($result);
+    }
+
+    public function test_handle_action_with_non_action_column()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a test model
+        $model = TestModel::factory()->create(['id' => 789, 'name' => 'Test Model']);
+
+        // Create a regular column (not an ActionColumn)
+        $regularColumn = Column::make('name');
+
+        $table = EloquentTable::make(TestModel::query())->columns([$regularColumn]);
+        $datatable->table($table);
+
+        // Create a request
+        $request = new Request([
+            'action' => 'some_action',
+            'ids'    => [789]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        // Call handleAction
+        $result = $datatable->handleAction();
+
+        // Should return null because there are no action columns
+        $this->assertNull($result);
+    }
+
+    public function test_handle_action_with_no_matching_column_action()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a test model
+        $model = TestModel::factory()->create(['id' => 789, 'name' => 'Test Model']);
+
+        // Create a column action with a different name
+        $columnAction = ColumnAction::make('different_action')
+                                    ->handle(function ($model) {
+                                        return "Handled action for {$model->name}";
+                                    });
+
+        $actionColumn = ActionColumn::make('actions')
+                                    ->action($columnAction);
+
+        $table = EloquentTable::make(TestModel::query())->columns([$actionColumn]);
+        $datatable->table($table);
+
+        // Create a request with a non-matching action name
+        $request = new Request([
+            'action' => 'non_matching_action',
+            'ids'    => [789]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        // Call handleAction
+        $result = $datatable->handleAction();
+
+        // Should return null because there's no matching action
+        $this->assertNull($result);
+    }
+
+    public function test_handle_confirmation_with_non_existent_model()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a column action with confirm callback
+        $columnAction = ColumnAction::make('test_action')
+                                    ->confirm(function ($model) {
+                                        return [
+                                            'title'   => 'Confirm Action',
+                                            'message' => "Are you sure?",
+                                            'confirm' => 'Yes',
+                                            'cancel'  => 'No'
+                                        ];
+                                    });
+
+        $actionColumn = ActionColumn::make('actions')
+                                    ->action($columnAction);
+
+        $table = EloquentTable::make(TestModel::query())->columns([$actionColumn]);
+        $datatable->table($table);
+
+        // Create a request with a non-existent model ID
+        $request = new Request([
+            'action' => 'test_action_confirm',
+            'ids'    => [99999] // Non-existent ID
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        // Call handleAction which will internally call handleConfirmation
+        $result = $datatable->handleAction();
+
+        // Should return null because the model doesn't exist
+        $this->assertNull($result);
+    }
+
+    public function test_handle_confirmation_with_non_action_column()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a test model
+        $model = TestModel::factory()->create(['id' => 789, 'name' => 'Test Model']);
+
+        // Create a regular column (not an ActionColumn)
+        $regularColumn = Column::make('name');
+
+        $table = EloquentTable::make(TestModel::query())->columns([$regularColumn]);
+        $datatable->table($table);
+
+        // Create a request
+        $request = new Request([
+            'action' => 'some_action_confirm',
+            'ids'    => [789]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        // Call handleAction which will internally call handleConfirmation
+        $result = $datatable->handleAction();
+
+        // Should return null because there are no action columns
+        $this->assertNull($result);
+    }
+
+    public function test_handle_confirmation_with_no_matching_column_action()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a test model
+        $model = TestModel::factory()->create(['id' => 789, 'name' => 'Test Model']);
+
+        // Create a column action with a different name
+        $columnAction = ColumnAction::make('different_action')
+                                    ->confirm(function ($model) {
+                                        return [
+                                            'title'   => 'Confirm Action',
+                                            'message' => "Are you sure?",
+                                            'confirm' => 'Yes',
+                                            'cancel'  => 'No'
+                                        ];
+                                    });
+
+        $actionColumn = ActionColumn::make('actions')
+                                    ->action($columnAction);
+
+        $table = EloquentTable::make(TestModel::query())->columns([$actionColumn]);
+        $datatable->table($table);
+
+        // Create a request with a non-matching action name
+        $request = new Request([
+            'action' => 'non_matching_action_confirm',
+            'ids'    => [789]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        // Call handleAction which will internally call handleConfirmation
+        $result = $datatable->handleAction();
+
+        // Should return null because there's no matching action
+        $this->assertNull($result);
     }
 }

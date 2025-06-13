@@ -26,20 +26,18 @@ class Column
 
     public static function make(string $name): self
     {
-        $instance = new self();
+        $column = new self();
 
-        // Check if the column name contains relationships (dots)
-        if (str_contains($name, '.')) {
-            $parts = explode('.', $name);
-            $instance->name = end($parts); // The actual column name is the last part
-
-            // The relation path is everything except the last part
-            $instance->relationPath = array_slice($parts, 0, -1);
-        } else {
-            $instance->name = $name;
+        if (!str_contains($name, '.')) {
+            $column->name = $name;
+            return $column;
         }
 
-        return $instance;
+        $parts = explode('.', $name);
+        $column->name = array_pop($parts);
+        $column->relationPath = $parts;
+
+        return $column;
     }
 
     public function getName(): string
@@ -111,72 +109,60 @@ class Column
             return;
         }
 
-        if (!is_array($keywords)) {
-            $keywords = [$keywords];
-        }
+        $keywords = is_array($keywords) ? $keywords : [$keywords];
 
-        if ($keywords) {
-            foreach ($keywords as $keyword) {
-                if ($this->filterCallback) {
-                    call_user_func($this->filterCallback, $query, $keyword);
-                } else {
-                    if ($this->hasRelation()) {
-                        // For relationship columns, use whereHas to search in related models
-                        $relationPath = $this->relationPath;
-                        $columnName = $this->name;
-
-                        // Build nested whereHas for each level of the relationship
-                        $currentRelation = array_shift($relationPath);
-                        $query->orWhereHas($currentRelation, function ($subQuery) use ($relationPath, $columnName, $keyword) {
-                            $this->buildNestedWhereHas($subQuery, $relationPath, $columnName, $keyword);
-                        });
-                    } else {
-                        // For regular columns, use a simple where clause
-                        $query->where(fn($query) => $query->orWhere($this->name, 'like', "%$keyword%"));
-                    }
-                }
+        foreach ($keywords as $keyword) {
+            if ($this->filterCallback) {
+                call_user_func($this->filterCallback, $query, $keyword);
+                continue;
             }
-        }
-    }
 
-    /**
-     * Recursively build nested whereHas queries for deep relationships
-     */
-    protected function buildNestedWhereHas(Builder $query, array $relationPath, string $columnName, string $keyword): void
-    {
-        if (empty($relationPath)) {
-            // We've reached the final relation, apply the where clause on the column
-            $query->where($columnName, 'like', "%$keyword%");
-        } else {
-            // We still have relations to traverse, continue with whereHas
-            $currentRelation = array_shift($relationPath);
-            $query->whereHas($currentRelation, function ($subQuery) use ($relationPath, $columnName, $keyword) {
-                $this->buildNestedWhereHas($subQuery, $relationPath, $columnName, $keyword);
+            if (!$this->hasRelation()) {
+                $query->where(fn($q) => $q->orWhere($this->name, 'like', "%{$keyword}%"));
+                continue;
+            }
+
+            // Handle relations
+            $paths = $this->relationPath;
+            $rel = array_shift($paths);
+            $query->orWhereHas($rel, function ($query) use ($paths, $keyword) {
+                $this->buildNestedWhereHas($query, $paths, $this->name, $keyword);
             });
         }
     }
 
+    protected function buildNestedWhereHas(Builder $query, array $path, string $column, string $keyword): void
+    {
+        if (empty($path)) {
+            $query->where($column, 'like', "%{$keyword}%");
+            return;
+        }
+
+        $relation = array_shift($path);
+        $query->whereHas($relation, function ($subq) use ($path, $column, $keyword) {
+            $this->buildNestedWhereHas($subq, $path, $column, $keyword);
+        });
+    }
+
     public function renderHtml(object $model): ?string
     {
-        if ($this->htmlCallback === null) {
-            if ($this->hasRelation()) {
-                // Traverse the relationship path to get the final value
-                $value = $model;
-                foreach ($this->relationPath as $relation) {
-                    if (!$value || !isset($value->{$relation})) {
-                        return null; // Return null if any part of the path is null
-                    }
-                    $value = $value->{$relation};
-                }
+        if ($this->htmlCallback) {
+            return call_user_func($this->htmlCallback, $model);
+        }
 
-                // Get the final property value if the relationship object exists
-                return $value ? $value->{$this->name} : null;
-            }
-
+        // No custom renderer, use default behavior
+        if (!$this->hasRelation()) {
             return $model->{$this->name};
         }
 
-        return call_user_func($this->htmlCallback, $model);
+        foreach ($this->relationPath as $rel) {
+            if (!$model || !isset($model->{$rel})) {
+                return null;
+            }
+            $model = $model->{$rel};
+        }
+
+        return $model ? $model->{$this->name} : null;
     }
 
     public function getOrderCallback(): ?callable

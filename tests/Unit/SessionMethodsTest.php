@@ -265,7 +265,7 @@ class SessionMethodsTest extends TestCase
         // Test with no suffix
         $key1 = $datatable->getSessionKey();
         $this->assertIsString($key1);
-        $this->assertStringStartsWith('datatable_', $key1);
+        $this->assertStringStartsWith('dt_', $key1);
 
         // Test with a suffix
         $key2 = $datatable->getSessionKey('test');
