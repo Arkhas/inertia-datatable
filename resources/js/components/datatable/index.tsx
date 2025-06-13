@@ -15,9 +15,14 @@ import {
   Column
 } from './types';
 
-const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) => {
+const Datatable: React.FC<DatatableProps> = ({ route: providedRouteName, icons = {} }) => {
+  // Get the current page information
+  const page = usePage();
 
-  const { columns, filters, actions, currentFilters, data, pageSize, availablePageSizes, sort, direction, translations, actionResult, visibleColumns: propsVisibleColumns, exportable = true, exportType = 'csv', exportColumn = 'visible' } = usePage().props;
+  // Automatically detect the route from the current URL if not provided
+  const routeName = providedRouteName || page.url;
+
+  const { columns, filters, actions, currentFilters, data, pageSize, availablePageSizes, sort, direction, translations, actionResult, visibleColumns: propsVisibleColumns, exportable = true, exportType = 'csv', exportColumn = 'visible' } = page.props;
 
   // Get translation function
   const { t } = useTranslation();
@@ -417,10 +422,6 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
     }
 
     // Otherwise, send the action to the server
-    if (!routeName) {
-      console.error("Route name is not defined for Datatable component");
-      return;
-    }
 
     try {
       const actionUrl = route(routeName);
