@@ -69,7 +69,7 @@ class InertiaDatatableHandleExportTest extends TestCase
         $datatable->table($table);
 
         // Make a request with the export parameter
-        $request = new Request(['export' => true]);
+        $request = new Request(['dt' => ['export' => true]]);
         $this->app->instance(Request::class, $request);
 
         // Call render which should trigger handleExport
@@ -93,7 +93,7 @@ class InertiaDatatableHandleExportTest extends TestCase
         $datatable->table($table);
 
         // Make a request with the export parameter
-        $request = new Request(['export' => true]);
+        $request = new Request(['dt' => ['export' => true]]);
         $this->app->instance(Request::class, $request);
 
         // Expect an abort with 403
@@ -137,11 +137,13 @@ class InertiaDatatableHandleExportTest extends TestCase
 
         // Create a request with export parameters
         $request = new Request([
-            'export' => true,
-            'exportType' => 'excel',
-            'exportColumns' => 'visible',
-            'exportRows' => 'selected',
-            'selectedIds' => '1,2,3'
+            'dt' => [
+                'export' => true,
+                'exportType' => 'excel',
+                'exportColumns' => 'visible',
+                'exportRows' => 'selected',
+                'selectedIds' => '1,2,3'
+            ]
         ]);
         $this->app->instance(Request::class, $request);
 
@@ -191,11 +193,13 @@ class InertiaDatatableHandleExportTest extends TestCase
 
         // Create a request with export parameters
         $request = new Request([
-            'export' => true,
-            'exportType' => 'excel',
-            'exportColumns' => 'visible',
-            'exportRows' => 'selected',
-            'selectedIds' => '1,2,3'
+            'dt' => [
+                'export' => true,
+                'exportType' => 'excel',
+                'exportColumns' => 'visible',
+                'exportRows' => 'selected',
+                'selectedIds' => '1,2,3'
+            ]
         ]);
         $this->app->instance(Request::class, $request);
 

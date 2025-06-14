@@ -15,6 +15,7 @@ use Error;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Inertia\Response;
@@ -23,10 +24,11 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 abstract class InertiaDatatable
 {
     protected EloquentTable $table;
-    protected int      $defaultPageSize;
-    protected array    $availablePageSizes     = [10, 25, 100];
-    protected array    $additionalSearchFields = [];
-    protected ?Request $request                = null;
+    protected int           $defaultPageSize;
+    protected array         $availablePageSizes     = [10, 25, 100];
+    protected array         $additionalSearchFields = [];
+    protected ?Request      $request                = null;
+    private string          $name = 'dt';
 
     public function __construct()
     {
@@ -37,6 +39,7 @@ abstract class InertiaDatatable
     public function getSessionKey(string $suffix = ''): string
     {
         $baseKey = 'dt_' . md5(get_class($this));
+
         return $suffix ? "{$baseKey}_{$suffix}" : $baseKey;
     }
 
@@ -56,9 +59,9 @@ abstract class InertiaDatatable
         return $this;
     }
 
-    public function getRequest(): Request
+    public function getRequest(): Collection
     {
-        return app(Request::class);
+        return app(Request::class)->collect($this->name);
     }
 
     public function handleAction(): mixed
@@ -69,8 +72,8 @@ abstract class InertiaDatatable
             return null;
         }
 
-        $actionName = $request->input('action');
-        $ids = $request->input('ids');
+        $actionName = $request->get('action');
+        $ids        = $request->get('ids');
 
         if (str_ends_with($actionName, '_confirm')) {
             return $this->handleConfirmation($actionName, $ids);
@@ -182,6 +185,27 @@ abstract class InertiaDatatable
         return $currentFilterValues;
     }
 
+    public static function make($name = null): array|BinaryFileResponse
+    {
+        $dataTable = new static();
+
+        if (!isset($dataTable->table)) {
+            throw new Error('No table set for datatable');
+        }
+
+        $dataTable->name = $name ?? 'datatable';
+
+        $return  = $dataTable->getProps();
+        $request = $dataTable->getRequest();
+
+        // Handle export if requested
+        if ($request->has('export')) {
+            return $dataTable->handleExport();
+        }
+
+        return $return;
+    }
+
     public function render(string $component): JsonResponse|Response|BinaryFileResponse
     {
         if (!isset($this->table)) {
@@ -215,18 +239,18 @@ abstract class InertiaDatatable
         return session()->get($this->getSessionKey($key), $default);
     }
 
-    public function getProps(): array|BinaryFileResponse
+    public function getProps(): array
     {
-        $req = $this->getRequest();
+        $request = $this->getRequest();
 
         // Handle state persistence
-        $pageSize = $this->persistState('pageSize', $req->input('pageSize'), $this->defaultPageSize);
-        $sort = $this->persistState('sort', $req->input('sort'));
-        $direction = $this->persistState('direction', $req->input('direction'), 'asc');
-        $visibleCols = $this->persistState('visibleColumns', $req->input('visibleColumns'));
+        $pageSize    = $this->persistState('pageSize', $request->get('pageSize'), $this->defaultPageSize);
+        $sort        = $this->persistState('sort', $request->get('sort'));
+        $direction   = $this->persistState('direction', $request->get('direction'), 'asc');
+        $visibleCols = $this->persistState('visibleColumns', $request->get('visibleColumns'));
 
         // Special handling for filters
-        $filters = $req->input('filters');
+        $filters = $request->get('filters');
         if ($filters !== null) {
             if (is_array($filters) && empty($filters)) {
                 session()->forget($this->getSessionKey('filters'));
@@ -238,21 +262,22 @@ abstract class InertiaDatatable
         }
 
         return [
-            'actionResult' => $this->handleAction(),
-            'columns' => fn() => $this->getColumns(),
-            'filters' => fn() => $this->getFilters(),
-            'actions' => fn() => $this->getActions(),
-            'data' => fn() => $this->getData(),
-            'pageSize' => fn() => $pageSize,
+            'name'               => $this->name,
+            'actionResult'       => fn() => $this->handleAction(),
+            'columns'            => fn() => $this->getColumns(),
+            'filters'            => fn() => $this->getFilters(),
+            'actions'            => fn() => $this->getActions(),
+            'data'               => fn() => $this->getData(),
+            'pageSize'           => fn() => $pageSize,
             'availablePageSizes' => fn() => $this->availablePageSizes,
-            'sort' => fn() => $sort,
-            'direction' => fn() => $direction,
-            'currentFilters' => fn() => $this->getCurrentFilterValues($filters),
-            'translations' => fn() => $this->getTranslations(),
-            'visibleColumns' => fn() => $visibleCols,
-            'exportable' => fn() => $this->table->isExportable(),
-            'exportType' => fn() => $this->table->getExportType(),
-            'exportColumn' => fn() => $this->table->getExportColumn(),
+            'sort'               => fn() => $sort,
+            'direction'          => fn() => $direction,
+            'currentFilters'     => fn() => $this->getCurrentFilterValues($filters),
+            'translations'       => fn() => $this->getTranslations(),
+            'visibleColumns'     => fn() => $visibleCols,
+            'exportable'         => fn() => $this->table->isExportable(),
+            'exportType'         => fn() => $this->table->getExportType(),
+            'exportColumn'       => fn() => $this->table->getExportColumn(),
         ];
     }
 
@@ -260,6 +285,7 @@ abstract class InertiaDatatable
     {
         if ($value !== null) {
             $this->storeInSession($key, $value);
+
             return $value;
         }
 
@@ -311,12 +337,12 @@ abstract class InertiaDatatable
         $columns = [];
         foreach ($this->table->getColumns() as $column) {
             $columnData = method_exists($column, 'toArray') ? $column->toArray() : [
-                'name'       => $column->getName(),
-                'label'      => $column->getLabel(),
-                'hasIcon'    => method_exists($column, 'hasIcon') ? $column->hasIcon() : (method_exists($column, 'getIconCallback') && $column->getIconCallback() !== null),
-                'sortable'   => method_exists($column, 'isSortable') ? $column->isSortable() : true,
-                'searchable' => method_exists($column, 'isSearchable') ? $column->isSearchable() : true,
-                'toggable'   => method_exists($column, 'isToggable') ? $column->isToggable() : true,
+                'name'         => $column->getName(),
+                'label'        => $column->getLabel(),
+                'hasIcon'      => method_exists($column, 'hasIcon') ? $column->hasIcon() : (method_exists($column, 'getIconCallback') && $column->getIconCallback() !== null),
+                'sortable'     => method_exists($column, 'isSortable') ? $column->isSortable() : true,
+                'searchable'   => method_exists($column, 'isSearchable') ? $column->isSearchable() : true,
+                'toggable'     => method_exists($column, 'isToggable') ? $column->isToggable() : true,
                 'iconPosition' => method_exists($column, 'getIconPosition') ? $column->getIconPosition() : 'left'
             ];
 
@@ -327,7 +353,7 @@ abstract class InertiaDatatable
 
             // Add type and action for action columns
             if ($column instanceof ActionColumn) {
-                $columnData['type'] = 'action';
+                $columnData['type']   = 'action';
                 $columnData['action'] = $column->getAction();
             }
 
@@ -342,12 +368,12 @@ abstract class InertiaDatatable
         $filters = [];
         foreach ($this->table->getFilters() as $filter) {
             $filters[] = method_exists($filter, 'toArray') ? $filter->toArray() : [
-                'name'     => $filter->getName(),
-                'label'    => $filter->getLabel(),
-                'options'  => $filter->getOptions(),
-                'icons'    => $filter->getIcons(),
+                'name'          => $filter->getName(),
+                'label'         => $filter->getLabel(),
+                'options'       => $filter->getOptions(),
+                'icons'         => $filter->getIcons(),
                 'iconPositions' => $filter->getIconPositions(),
-                'multiple' => $filter->isMultiple(),
+                'multiple'      => $filter->isMultiple(),
                 'filterOptions' => method_exists($filter, 'getFilterOptions') ? $filter->getFilterOptions() : []
             ];
         }
@@ -375,7 +401,7 @@ abstract class InertiaDatatable
         $filterDefinitions = $this->table->getFilters();
         $query             = $this->table->getQuery()->clone();
 
-        $searchTerm = $request->input('search');
+        $searchTerm = $request->get('search');
 
         if ($searchTerm) {
             $query->where(function ($q) use ($searchTerm, $columns) {
@@ -401,7 +427,7 @@ abstract class InertiaDatatable
         }
 
         // Get filters from request or session
-        $filters = $request->input('filters');
+        $filters = $request->get('filters');
         if ($filters !== null) {
             $this->storeInSession('filters', $filters);
         } else {
@@ -429,15 +455,15 @@ abstract class InertiaDatatable
         }
 
         // Get sort from request or session
-        $sort = $request->input('sort');
+        $sort = $request->get('sort');
         if ($sort !== null) {
-            $direction = $request->input('direction', 'asc');
+            $direction = $request->get('direction', 'asc');
             // Store sort and direction in session
             $this->storeInSession('sort', $sort);
             $this->storeInSession('direction', $direction);
         } else {
             // Get sort and direction from session
-            $sort = $this->getFromSession('sort');
+            $sort      = $this->getFromSession('sort');
             $direction = $this->getFromSession('direction', 'asc');
         }
 
@@ -454,12 +480,12 @@ abstract class InertiaDatatable
 
     public function getData(): LengthAwarePaginator
     {
-        $results  = $this->getResults();
-        $request  = $this->getRequest();
-        $columns  = $this->table->getColumns();
+        $results = $this->getResults();
+        $request = $this->getRequest();
+        $columns = $this->table->getColumns();
 
         // Get page size from request or session
-        $pageSize = $request->input('pageSize');
+        $pageSize = $request->get('pageSize');
         if ($pageSize !== null) {
             // Store page size in session
             $this->storeInSession('pageSize', $pageSize);
@@ -472,7 +498,7 @@ abstract class InertiaDatatable
 
         $data = $results->paginate($pageSize);
 
-        $collection = $data->getCollection();
+        $collection    = $data->getCollection();
         $processedData = collect();
 
         foreach ($collection as $model) {
@@ -496,9 +522,9 @@ abstract class InertiaDatatable
                 }
                 // Handle checkbox columns
                 if ($column instanceof CheckboxColumn) {
-                    $value = $column->getValue($model);
-                    $result["{$columnName}_value"] = $value;
-                    $result["{$columnName}_checked"] = $column->isChecked($model);
+                    $value                            = $column->getValue($model);
+                    $result["{$columnName}_value"]    = $value;
+                    $result["{$columnName}_checked"]  = $column->isChecked($model);
                     $result["{$columnName}_disabled"] = $column->isDisabled($model);
                 }
 
@@ -508,7 +534,7 @@ abstract class InertiaDatatable
                     // Convert ColumnActionGroup to array if needed
                     if ($action instanceof ColumnActionGroup) {
                         // Get the action group data
-                        $actionGroupArray = $action->toArray($model);
+                        $actionGroupArray               = $action->toArray($model);
                         $result["{$columnName}_action"] = $actionGroupArray;
                     } elseif ($action instanceof ColumnAction) {
                         // Convert ColumnAction to array with actions property
@@ -550,10 +576,10 @@ abstract class InertiaDatatable
         }
 
         // Get export parameters
-        $exportType = $request->input('exportType', $this->table->getExportType());
-        $exportColumns = $request->input('exportColumns', $this->table->getExportColumn());
-        $exportRows = $request->input('exportRows', 'all');
-        $selectedIds = $request->input('selectedIds', '');
+        $exportType    = $request->get('exportType', $this->table->getExportType());
+        $exportColumns = $request->get('exportColumns', $this->table->getExportColumn());
+        $exportRows    = $request->get('exportRows', 'all');
+        $selectedIds   = $request->get('selectedIds', '');
 
         // Create export service
         $exportService = new ExportService($this->getResults(), $this->table);

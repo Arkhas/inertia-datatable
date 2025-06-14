@@ -8,13 +8,14 @@ use Tests\TestModels\User;
 use Tests\TestModels\Team;
 use Tests\TestModels\WithTestModels;
 use Tests\TestModels\TestModelDataTable;
+use Tests\Traits\WithDatatableRequest;
 use Arkhas\InertiaDatatable\EloquentTable;
 use Arkhas\InertiaDatatable\Columns\Column;
 use Illuminate\Http\Request;
 
 class RelationshipColumnTest extends TestCase
 {
-    use WithTestModels;
+    use WithTestModels, WithDatatableRequest;
 
     protected function setUp(): void
     {
@@ -91,7 +92,7 @@ class RelationshipColumnTest extends TestCase
         $datatable->table($table);
 
         // Search for John Doe (user name)
-        request()->replace(['search' => 'John']);
+        $this->setDatatableRequest(['search' => 'John']);
         $results = $datatable->getResults()->get();
 
         // Should find at least one result
@@ -119,7 +120,7 @@ class RelationshipColumnTest extends TestCase
         $datatable->table($table);
 
         // Search for Engineering team
-        request()->replace(['search' => 'Engineering']);
+        $this->setDatatableRequest(['search' => 'Engineering']);
         $results = $datatable->getResults()->get();
 
         // Should find the test models assigned to people in the Engineering team
@@ -138,7 +139,7 @@ class RelationshipColumnTest extends TestCase
         $datatable->table($table);
 
         // Order by user name ascending
-        request()->replace(['sort' => 'user.name', 'direction' => 'asc']);
+        $this->setDatatableRequest(['sort' => 'user.name', 'direction' => 'asc']);
         $results = $datatable->getResults()->get();
 
         // Verify that we have all expected models in the results
@@ -165,7 +166,7 @@ class RelationshipColumnTest extends TestCase
         $datatable->table($table);
 
         // Order by team name ascending
-        request()->replace(['sort' => 'user.team.name', 'direction' => 'asc']);
+        $this->setDatatableRequest(['sort' => 'user.team.name', 'direction' => 'asc']);
         $results = $datatable->getResults()->get();
 
         // Get the team names for each result
