@@ -120,5 +120,6 @@ export interface PageProps {
 
 export interface DatatableProps {
   route?: string;
+  name: string;
   icons?: Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>>>;
 }
