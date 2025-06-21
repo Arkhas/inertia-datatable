@@ -10,6 +10,7 @@ use Tests\TestCase;
 use Tests\TestModels\TestModelDataTable;
 use Tests\TestModels\WithTestModels;
 use Tests\TestModels\TestModel;
+use Tests\Traits\WithDatatableRequest;
 use Arkhas\InertiaDatatable\InertiaDatatable;
 use Arkhas\InertiaDatatable\EloquentTable;
 use Arkhas\InertiaDatatable\Columns\Column;
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\Config;
 
 class InertiaDatatableTest extends TestCase
 {
-    use WithTestModels;
+    use WithTestModels, WithDatatableRequest;
 
     protected function setUp(): void
     {
@@ -79,7 +80,7 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         // Apply invalid sort column
-        request()->replace(['sort' => 'invalid_column', 'direction' => 'asc']);
+        $this->setDatatableRequest(['sort' => 'invalid_column', 'direction' => 'asc']);
         $datatable->render('Datatable');
 
         $this->assertEquals(['Alice', 'Bob', 'Charlie'], $query->pluck('name')->toArray());
@@ -134,7 +135,7 @@ class InertiaDatatableTest extends TestCase
         $this->assertTrue($columns[1]['searchable']);
 
         // Test with a search term that matches the searchable column
-        request()->replace(['search' => 'active']);
+        $this->setDatatableRequest(['search' => 'active']);
         $results = $datatable->getResults()->get();
 
         // Should find results since the status column is searchable
@@ -147,7 +148,7 @@ class InertiaDatatableTest extends TestCase
         $this->assertTrue($allResults->contains('name', 'Alice'));
 
         // Now search for Alice with the name column not searchable
-        request()->replace(['search' => 'Alice']);
+        $this->setDatatableRequest(['search' => 'Alice']);
         $results = $datatable->getResults()->get();
 
         // Should not find any results since 'Alice' only appears in the non-searchable column
@@ -224,7 +225,7 @@ class InertiaDatatableTest extends TestCase
             Column::make('status'),
         ]);
         $datatable->table($table);
-        request()->replace(['search' => 'Alice', 'sort' => 'name', 'direction' => 'desc', 'pageSize' => 2]);
+        $this->setDatatableRequest(['search' => 'Alice', 'sort' => 'name', 'direction' => 'desc', 'pageSize' => 2]);
         $results = $datatable->getResults()->get();
         $this->assertTrue($results->contains('name', 'Alice'));
     }
@@ -236,7 +237,7 @@ class InertiaDatatableTest extends TestCase
             Column::make('name'),
         ]);
         $datatable->table($table);
-        request()->replace(['pageSize' => 2]);
+        $this->setDatatableRequest(['pageSize' => 2]);
         $data = $datatable->getData();
         $this->assertEquals(2, $data->perPage());
         $this->assertTrue($data->total() >= 3);
@@ -245,8 +246,11 @@ class InertiaDatatableTest extends TestCase
     public function test_render_throws_error_without_table()
     {
         $datatable = new TestModelDataTable();
+        $this->setDatatableRequest([]);
         $this->expectException(\Error::class);
-        $datatable->render('Datatable');
+        // Force the evaluation of the data closure which will trigger the error
+        $props = $datatable->getProps();
+        $props['data']();
     }
 
     public function test_get_results_throws_error_without_table()
@@ -265,7 +269,7 @@ class InertiaDatatableTest extends TestCase
         ]);
         $datatable->table($table);
         // Simulates a filter on status and a direct filter on name
-        request()->replace(['filters' => ['status' => 'active'], 'name' => 'Alice']);
+        $this->setDatatableRequest(['filters' => ['status' => 'active'], 'name' => 'Alice']);
         $results = $datatable->getResults()->get();
         $this->assertTrue($results->contains('name', 'Alice'));
         $this->assertTrue($results->contains('status', 'active'));
@@ -284,7 +288,7 @@ class InertiaDatatableTest extends TestCase
         ]);
         $datatable->table($table);
         // Simulates a filter on status and a direct filter on name
-        request()->replace(['filters' => ['status' => 'active'], 'name' => 'Alice']);
+        $this->setDatatableRequest(['filters' => ['status' => 'active'], 'name' => 'Alice']);
         $results = $datatable->getResults()->get();
         $this->assertTrue($results->contains('name', 'Alice'));
         $this->assertTrue($results->contains('status', 'active'));
@@ -297,7 +301,7 @@ class InertiaDatatableTest extends TestCase
             Column::make('name'),
         ]);
         $datatable->table($table);
-        request()->replace(['pageSize' => 0]);
+        $this->setDatatableRequest(['pageSize' => 0]);
         $results = $datatable->getResults()->get();
         $this->assertNotEmpty($results);
     }
@@ -310,7 +314,7 @@ class InertiaDatatableTest extends TestCase
                            ->icon(fn($model) => $model->name === 'Alice' ? 'icon' : null);
         $table     = EloquentTable::make(TestModel::query())->columns([$column]);
         $datatable->table($table);
-        request()->replace(['pageSize' => 2]);
+        $this->setDatatableRequest(['pageSize' => 2]);
         $data  = $datatable->getData();
         $first = $data->items()[0];
         $this->assertArrayHasKey('name', $first);
@@ -389,7 +393,7 @@ class InertiaDatatableTest extends TestCase
             Column::make('name'),
         ]);
         $datatable->table($table)->additionalSearchFields(['status']);
-        request()->replace(['search' => 'active']);
+        $this->setDatatableRequest(['search' => 'active']);
         $results = $datatable->getResults()->get();
         $this->assertTrue($results->contains('status', 'active'));
     }
@@ -401,7 +405,7 @@ class InertiaDatatableTest extends TestCase
         $filter = Filter::make('not_status', 'Not Status');
         $table  = EloquentTable::make(TestModel::query())->filters([$filter]);
         $datatable->table($table);
-        request()->replace(['filters' => ['status' => 'active']]);
+        $this->setDatatableRequest(['filters' => ['status' => 'active']]);
         $datatable->getResults();
         $this->assertTrue(true); // Si pas d'exception, le test passe
     }
@@ -413,7 +417,7 @@ class InertiaDatatableTest extends TestCase
         $column = Column::make('name');
         $table  = EloquentTable::make(TestModel::query())->columns([$column]);
         $datatable->table($table);
-        request()->replace(['search' => 'Alice']);
+        $this->setDatatableRequest(['search' => 'Alice']);
         $results = $datatable->getResults()->get();
         $this->assertTrue($results->contains('name', 'Alice'));
     }
@@ -432,7 +436,7 @@ class InertiaDatatableTest extends TestCase
         $this->assertEquals(['user'], $column->getRelationPath());
 
         // Search for a user name
-        request()->replace(['search' => 'John']);
+        $this->setDatatableRequest(['search' => 'John']);
         $results = $datatable->getResults()->get();
 
         // Should find results since we're searching in the user relation
@@ -465,7 +469,7 @@ class InertiaDatatableTest extends TestCase
         $this->assertNotNull($column->getFilterCallback());
 
         // Search for a user name
-        request()->replace(['search' => 'John']);
+        $this->setDatatableRequest(['search' => 'John']);
         $results = $datatable->getResults()->get();
 
         // Should find results since we're searching in the user relation
@@ -482,7 +486,7 @@ class InertiaDatatableTest extends TestCase
         $column = Column::make('name')->filter(fn($query, $value) => $query->where('name', 'like', "%$value%"));
         $table  = EloquentTable::make(TestModel::query())->columns([$column]);
         $datatable->table($table);
-        request()->replace(['search' => 'Alice']);
+        $this->setDatatableRequest(['search' => 'Alice']);
         $results = $datatable->getResults()->get();
         $this->assertTrue($results->contains('name', 'Alice'));
     }
@@ -495,7 +499,7 @@ class InertiaDatatableTest extends TestCase
         $column = Column::make('name');
         $table  = EloquentTable::make(TestModel::query())->columns([$column]);
         $datatable->table($table);
-        request()->replace(['pageSize' => 2]);
+        $this->setDatatableRequest(['pageSize' => 2]);
         $data  = $datatable->getData();
         $first = $data->items()[0];
         $this->assertArrayHasKey('name', $first);
@@ -529,8 +533,10 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         $request = new Request([
-            'action' => 'test_action',
-            'ids'    => [1, 2, 3]
+            'dt' => [
+                'action' => 'test_action',
+                'ids'    => [1, 2, 3]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -553,8 +559,10 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         $request = new Request([
-            'action' => 'group_action',
-            'ids'    => [4, 5, 6]
+            'dt' => [
+                'action' => 'group_action',
+                'ids'    => [4, 5, 6]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -575,8 +583,10 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         $request = new Request([
-            'action' => 'non_existent_action',
-            'ids'    => [1, 2, 3]
+            'dt' => [
+                'action' => 'non_existent_action',
+                'ids'    => [1, 2, 3]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -597,7 +607,9 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         $request = new Request([
-            'ids' => [1, 2, 3]
+            'dt' => [
+                'ids' => [1, 2, 3]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -624,8 +636,10 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         $request = new Request([
-            'action' => 'test_action_confirm',
-            'ids'    => [1, 2, 3]
+            'dt' => [
+                'action' => 'test_action_confirm',
+                'ids'    => [1, 2, 3]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -661,8 +675,10 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         $request = new Request([
-            'action' => 'group_action_confirm',
-            'ids'    => [4, 5, 6]
+            'dt' => [
+                'action' => 'group_action_confirm',
+                'ids'    => [4, 5, 6]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -705,8 +721,10 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         $request = new Request([
-            'action' => 'column_action_confirm',
-            'ids'    => [123]
+            'dt' => [
+                'action' => 'column_action_confirm',
+                'ids'    => [123]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -760,8 +778,10 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         $request = new Request([
-            'action' => 'column_action',
-            'ids'    => [123]
+            'dt' => [
+                'action' => 'column_action',
+                'ids'    => [123]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -793,8 +813,10 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         $request = new Request([
-            'action' => 'group_column_action',
-            'ids'    => [456]
+            'dt' => [
+                'action' => 'group_column_action',
+                'ids'    => [456]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -1045,7 +1067,7 @@ class InertiaDatatableTest extends TestCase
         ]);
         $datatable->table($table);
 
-        request()->replace(['pageSize' => 10]);
+        $this->setDatatableRequest(['pageSize' => 10]);
         $data = $datatable->getData();
 
         // Check that we have the expected number of items
@@ -1143,7 +1165,7 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         // Get data
-        request()->replace(['pageSize' => 10]);
+        $this->setDatatableRequest(['pageSize' => 10]);
         $data = $datatable->getData();
 
         // Check that we have the expected number of items
@@ -1204,7 +1226,7 @@ class InertiaDatatableTest extends TestCase
         $datatable->table($table);
 
         // Get data
-        request()->replace(['pageSize' => 10]);
+        $this->setDatatableRequest(['pageSize' => 10]);
         $data = $datatable->getData();
 
         // Check that we have the expected number of items
@@ -1236,11 +1258,11 @@ class InertiaDatatableTest extends TestCase
         $this->assertTrue($results->contains('status', 'inactive'));
 
 
-        request()->replace(['filters' => ['status' => 'active']]);
+        $this->setDatatableRequest(['filters' => ['status' => 'active']]);
         $results = $datatable->getResults()->get();
         $this->assertTrue($results->doesntContain('status', 'inactive'));
 
-        request()->replace(['filters' => []]);
+        $this->setDatatableRequest(['filters' => []]);
 
         $results = $datatable->getResults()->get();
         $this->assertTrue($results->contains('status', 'active'));
@@ -1276,8 +1298,10 @@ class InertiaDatatableTest extends TestCase
 
         // Create a request with the action name ending with _confirm
         $request = new Request([
-            'action' => 'single_action_confirm',
-            'ids'    => [456]
+            'dt' => [
+                'action' => 'single_action_confirm',
+                'ids'    => [456]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -1313,8 +1337,10 @@ class InertiaDatatableTest extends TestCase
 
         // Create a request with a non-existent model ID
         $request = new Request([
-            'action' => 'test_action',
-            'ids'    => [99999] // Non-existent ID
+            'dt' => [
+                'action' => 'test_action',
+                'ids'    => [99999] // Non-existent ID
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -1341,8 +1367,10 @@ class InertiaDatatableTest extends TestCase
 
         // Create a request
         $request = new Request([
-            'action' => 'some_action',
-            'ids'    => [789]
+            'dt' => [
+                'action' => 'some_action',
+                'ids'    => [789]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -1375,8 +1403,10 @@ class InertiaDatatableTest extends TestCase
 
         // Create a request with a non-matching action name
         $request = new Request([
-            'action' => 'non_matching_action',
-            'ids'    => [789]
+            'dt' => [
+                'action' => 'non_matching_action',
+                'ids'    => [789]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -1411,8 +1441,10 @@ class InertiaDatatableTest extends TestCase
 
         // Create a request with a non-existent model ID
         $request = new Request([
-            'action' => 'test_action_confirm',
-            'ids'    => [99999] // Non-existent ID
+            'dt' => [
+                'action' => 'test_action_confirm',
+                'ids'    => [99999] // Non-existent ID
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -1439,8 +1471,10 @@ class InertiaDatatableTest extends TestCase
 
         // Create a request
         $request = new Request([
-            'action' => 'some_action_confirm',
-            'ids'    => [789]
+            'dt' => [
+                'action' => 'some_action_confirm',
+                'ids'    => [789]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -1478,8 +1512,10 @@ class InertiaDatatableTest extends TestCase
 
         // Create a request with a non-matching action name
         $request = new Request([
-            'action' => 'non_matching_action_confirm',
-            'ids'    => [789]
+            'dt' => [
+                'action' => 'non_matching_action_confirm',
+                'ids'    => [789]
+            ]
         ]);
 
         $this->app->instance(Request::class, $request);
@@ -1489,5 +1525,132 @@ class InertiaDatatableTest extends TestCase
 
         // Should return null because there's no matching action
         $this->assertNull($result);
+    }
+
+    public function test_handle_confirmation_with_multiple_ids()
+    {
+        $datatable = new TestModelDataTable();
+
+        // Create a column action with confirm callback
+        $columnAction = ColumnAction::make('test_action')
+                                    ->confirm(function ($model) {
+                                        return [
+                                            'title'   => 'Confirm Action',
+                                            'message' => "Are you sure?",
+                                            'confirm' => 'Yes',
+                                            'cancel'  => 'No'
+                                        ];
+                                    });
+
+        $actionColumn = ActionColumn::make('actions')
+                                    ->action($columnAction);
+
+        $table = EloquentTable::make(TestModel::query())->columns([$actionColumn]);
+        $datatable->table($table);
+
+        // Create a request with multiple IDs for a column action (which requires a single ID)
+        $request = new Request([
+            'dt' => [
+                'action' => 'test_action_confirm',
+                'ids'    => [1, 2, 3] // Multiple IDs
+            ]
+        ]);
+
+        $this->app->instance(Request::class, $request);
+
+        // Call handleAction which will internally call handleConfirmation
+        $result = $datatable->handleAction();
+
+        // Should return null because column actions require a single ID
+        $this->assertNull($result);
+    }
+
+    public function test_static_make_method_throws_error_without_table()
+    {
+        // Create a TestModelDataTable subclass that doesn't set up a table
+        $testDataTable = new class extends TestModelDataTable {
+            public function setup(): void
+            {
+                // Intentionally not setting up a table
+            }
+        };
+
+        // Expect an error when calling the static make method
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('No table set for datatable');
+
+        // Call the static make method on our subclass
+        $testDataTable::make();
+    }
+
+    public function test_static_make_method_returns_array()
+    {
+        // Create a TestModelDataTable subclass that sets up a table in the constructor
+        $testDataTable = new class extends TestModelDataTable {
+            public function setup(): void
+            {
+                $table = EloquentTable::make(TestModel::query())->columns([
+                    Column::make('name'),
+                ]);
+                $this->table($table);
+            }
+        };
+
+        // Create a mock request
+        $request = new Request([
+            'dt' => [
+                'pageSize' => 10
+            ]
+        ]);
+        $this->app->instance(Request::class, $request);
+
+        // Call the static make method on our subclass
+        $result = $testDataTable::make('custom_name');
+
+        // Verify the result is an array
+        $this->assertIsArray($result);
+    }
+
+    public function test_static_make_method_with_export_parameter()
+    {
+        // Create a TestModelDataTable subclass that sets up a table and overrides handleExport
+        $testDataTable = new class extends TestModelDataTable {
+            public function setup(): void
+            {
+                $table = EloquentTable::make(TestModel::query())->columns([
+                    Column::make('name'),
+                ]);
+                $table->exportable(true);
+                $this->table($table);
+            }
+
+            public function handleExport(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+            {
+                return new \Symfony\Component\HttpFoundation\BinaryFileResponse(__FILE__);
+            }
+
+            public function getRequest(): \Illuminate\Support\Collection
+            {
+                return new \Illuminate\Support\Collection(['export' => true]);
+            }
+        };
+
+        // Call the static make method on our subclass
+        $result = $testDataTable::make();
+
+        // Verify the result is a BinaryFileResponse
+        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class, $result);
+    }
+
+    public function test_render_method_throws_error_without_table()
+    {
+        $datatable = new TestModelDataTable();
+        $this->setDatatableRequest([]);
+
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('No table set for datatable');
+
+        // Call render method directly, which should throw an error
+        $datatable->render('TestComponent');
     }
 }

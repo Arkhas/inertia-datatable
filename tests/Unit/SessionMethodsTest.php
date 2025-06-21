@@ -6,13 +6,14 @@ use Tests\TestCase;
 use Tests\TestModels\TestModelDataTable;
 use Tests\TestModels\TestModel;
 use Tests\TestModels\WithTestModels;
+use Tests\Traits\WithDatatableRequest;
 use Arkhas\InertiaDatatable\EloquentTable;
 use Arkhas\InertiaDatatable\Columns\Column;
 use Illuminate\Support\Facades\Session;
 
 class SessionMethodsTest extends TestCase
 {
-    use WithTestModels;
+    use WithTestModels, WithDatatableRequest;
 
     protected function setUp(): void
     {
@@ -30,14 +31,14 @@ class SessionMethodsTest extends TestCase
         $datatable->table($table);
 
         // Set page size in request
-        request()->replace(['pageSize' => 10]);
+        $this->setDatatableRequest(['pageSize' => 10]);
 
         // Get props to store in session
         $props1 = $datatable->getProps();
         $this->assertEquals(10, $props1['pageSize']());
 
         // Clear request and get props again
-        request()->replace([]);
+        $this->setDatatableRequest([]);
         $props2 = $datatable->getProps();
 
         // Page size should be retrieved from session
@@ -54,18 +55,19 @@ class SessionMethodsTest extends TestCase
         $datatable->table($table);
 
         // Set sort and direction in request
-        request()->replace([
+        $this->setDatatableRequest([
             'sort' => 'name',
             'direction' => 'desc'
         ]);
 
         // Get props to store in session
         $props1 = $datatable->getProps();
+
         $this->assertEquals('name', $props1['sort']());
         $this->assertEquals('desc', $props1['direction']());
 
         // Clear request and get props again
-        request()->replace([]);
+        $this->setDatatableRequest([]);
         $props2 = $datatable->getProps();
 
         // Sort and direction should be retrieved from session
@@ -83,7 +85,7 @@ class SessionMethodsTest extends TestCase
         $datatable->table($table);
 
         // Set filters in request
-        request()->replace([
+        $this->setDatatableRequest([
             'filters' => ['status' => 'active']
         ]);
 
@@ -92,7 +94,7 @@ class SessionMethodsTest extends TestCase
         $this->assertEquals(['status' => 'active'], $props1['currentFilters']());
 
         // Clear request and get props again
-        request()->replace([]);
+        $this->setDatatableRequest([]);
         $props2 = $datatable->getProps();
 
         // Filters should be retrieved from session
@@ -110,7 +112,7 @@ class SessionMethodsTest extends TestCase
         $datatable->table($table);
 
         // Set visible columns in request
-        request()->replace([
+        $this->setDatatableRequest([
             'visibleColumns' => ['name']
         ]);
 
@@ -119,7 +121,7 @@ class SessionMethodsTest extends TestCase
         $this->assertEquals(['name'], $props1['visibleColumns']());
 
         // Clear request and get props again
-        request()->replace([]);
+        $this->setDatatableRequest([]);
         $props2 = $datatable->getProps();
 
         // Visible columns should be retrieved from session
@@ -136,7 +138,7 @@ class SessionMethodsTest extends TestCase
         $datatable->table($table);
 
         // Set filters in request
-        request()->replace([
+        $this->setDatatableRequest([
             'filters' => ['status' => 'active']
         ]);
 
@@ -144,7 +146,7 @@ class SessionMethodsTest extends TestCase
         $datatable->getProps();
 
         // Now set empty filters
-        request()->replace([
+        $this->setDatatableRequest([
             'filters' => []
         ]);
 
@@ -200,7 +202,7 @@ class SessionMethodsTest extends TestCase
         $datatable->table($table);
 
         // Set search in request
-        request()->replace([
+        $this->setDatatableRequest([
             'search' => 'Alice'
         ]);
 
@@ -212,7 +214,7 @@ class SessionMethodsTest extends TestCase
         $this->assertEquals('Alice', $results1->first()->name);
 
         // Now set empty search
-        request()->replace([
+        $this->setDatatableRequest([
             'search' => ''
         ]);
 
@@ -241,7 +243,7 @@ class SessionMethodsTest extends TestCase
         $datatable->table($table);
 
         // Set page size in request
-        request()->replace([
+        $this->setDatatableRequest([
             'pageSize' => 2
         ]);
 
@@ -249,7 +251,7 @@ class SessionMethodsTest extends TestCase
         $datatable->getProps();
 
         // Clear request and get data
-        request()->replace([]);
+        $this->setDatatableRequest([]);
         $data = $datatable->getData();
 
         // Page size should be retrieved from session

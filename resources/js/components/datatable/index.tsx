@@ -12,12 +12,13 @@ import {
   FormattedData,
   PendingAction,
   ConfirmDialogContent,
-  Column
+  Column,
+  PageProps
 } from './types';
 
-const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) => {
+const Datatable: React.FC<DatatableProps> = ({ route: routeName, name: name, icons = {} }) => {
 
-  const { columns, filters, actions, currentFilters, data, pageSize, availablePageSizes, sort, direction, translations, actionResult, visibleColumns: propsVisibleColumns, exportable = true, exportType = 'csv', exportColumn = 'visible' } = usePage().props;
+  const { columns, filters, actions, currentFilters, data, pageSize, availablePageSizes, sort, direction, translations, actionResult, visibleColumns: propsVisibleColumns, exportable = true, exportType = 'csv', exportColumn = 'visible' } = usePage().props[name] as PageProps;
 
   // Get translation function
   const { t } = useTranslation();
@@ -275,14 +276,16 @@ const Datatable: React.FC<DatatableProps> = ({ route: routeName, icons = {} }) =
 
       // Store current selectedRows before making the request
       const currentSelectedRows = [...selectedRows];
+      const payload: Record<string, unknown> = {};
+      payload[name] = queryParams;
 
       router.visit(url, {
         method: 'post',
-        data: queryParams,
+        data: payload,
         preserveState: true,
         preserveScroll: true,
         replace: true,
-        only: ['data', 'currentFilters', 'sort', 'direction', 'pageSize', 'visibleColumns'],
+        only: [name + '.data', name + '.currentFilters', name + '.sort', name + '.direction', name + '.pageSize',name + '.visibleColumns', name + '.availablePageSizes', name + '.columns', name + '.filters', name + '.actions'],
         onSuccess: () => {
           // After data is loaded, update selectedRows to only include IDs that still exist in the new data
           const checkboxColumn = columns.find(col => col.type === 'checkbox');
